@@ -1,14 +1,17 @@
 package com.capstone.meerkatai.video.entity;
 
-import com.capstone.meerkatai.anomalybehavior.entity.AnomalyBehaviorType;
+import com.capstone.meerkatai.anomalybehavior.entity.AnomalyBehavior;
 import com.capstone.meerkatai.streamingvideo.entity.StreamingVideo;
 import com.capstone.meerkatai.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class Video {
+
     @Id
     private Integer videoId;
 
@@ -31,11 +34,11 @@ public class Video {
     @JoinColumn(name = "streaming_video_id", nullable = false)
     private StreamingVideo streamingVideo;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private AnomalyBehaviorType anomalyBehaviorType;
-
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @OneToOne
+    @JoinColumn(name = "anomaly_id", nullable = false, unique = true)
+    private AnomalyBehavior anomalyBehavior;
 }
