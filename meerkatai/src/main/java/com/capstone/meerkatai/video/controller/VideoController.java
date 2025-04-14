@@ -2,6 +2,7 @@ package com.capstone.meerkatai.video.controller;
 
 import com.capstone.meerkatai.video.dto.GetVideoListResponse;
 import com.capstone.meerkatai.video.dto.VideoDeleteRequest;
+import com.capstone.meerkatai.video.dto.VideoDetailsResponse;
 import com.capstone.meerkatai.video.dto.VideoDownloadRequest;
 import com.capstone.meerkatai.video.entity.Video;
 import com.capstone.meerkatai.video.service.VideoService;
@@ -191,6 +192,52 @@ public class VideoController {
 //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
 //                    "status", "error",
 //                    "message", "영상 삭제 중 오류가 발생했습니다."
+//            ));
+//        }
+//    }
+
+    @GetMapping("/view/{videoId}")
+    public ResponseEntity<?> getVideoDetails(
+            @PathVariable Integer videoId,
+            @RequestParam Integer userId
+    ) {
+        try {
+            VideoDetailsResponse response = videoService.getVideoDetails(userId, videoId);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "data", response
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", "비디오 정보를 찾을 수 없습니다."
+            ));
+        }
+    }
+
+    //JWT 토큰 버전 api
+//    @GetMapping("/view/{videoId}")
+//    public ResponseEntity<?> getVideoDetails(
+//            @RequestHeader("Authorization") String authHeader,
+//            @PathVariable Integer videoId
+//    ) {
+//        try {
+//            // 🔐 JWT 토큰에서 userId 추출
+//            String token = authHeader.replace("Bearer ", "");
+//            Integer userId = jwtUtil.getUserIdFromToken(token).intValue(); // userId가 Long이면 int로 변환
+//
+//            // 📦 서비스 로직 호출
+//            VideoDetailsResponse response = videoService.getVideoDetails(userId, videoId);
+//
+//            return ResponseEntity.ok(Map.of(
+//                    "status", "success",
+//                    "data", response
+//            ));
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+//                    "status", "error",
+//                    "message", "비디오 정보를 찾을 수 없습니다."
 //            ));
 //        }
 //    }
