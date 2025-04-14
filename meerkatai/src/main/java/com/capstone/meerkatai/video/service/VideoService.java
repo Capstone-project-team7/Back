@@ -89,6 +89,20 @@ public class VideoService {
         return result;
     }
 
+    public List<Integer> deleteVideosByUser(Integer userId, List<Integer> videoIds) {
+        // 1. userId와 videoIds로 사용자 본인의 영상만 필터링
+        List<Video> videos = videoRepository.findByUser_UserIdAndVideoIdIn(userId, videoIds);
+
+        // 2. 삭제
+        videoRepository.deleteAll(videos);
+
+        // 3. 실제 삭제된 ID만 반환
+        return videos.stream()
+                .map(Video::getVideoId)
+                .collect(Collectors.toList());
+    }
+
+
 
 
 //    public List<Video> findAll() {
