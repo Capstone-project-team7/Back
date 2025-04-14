@@ -15,7 +15,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable()) // ✅ 최신 문법
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/videos/list/**").permitAll()
+                        .requestMatchers("/api/v1/**").permitAll()
                         .anyRequest().authenticated()
                 );
 

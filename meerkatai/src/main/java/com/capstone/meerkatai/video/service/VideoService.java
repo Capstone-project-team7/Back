@@ -4,8 +4,14 @@ import com.capstone.meerkatai.video.dto.GetVideoListResponse;
 import com.capstone.meerkatai.video.entity.Video;
 import com.capstone.meerkatai.video.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Optional;
@@ -52,6 +58,38 @@ public class VideoService {
 
         return new GetVideoListResponse("success", data);
     }
+
+
+
+
+
+    public List<Pair<String, InputStream>> getVideoStreams(Integer userId, List<Integer> videoIds) {
+        List<Video> videos = videoRepository.findByUser_UserIdAndVideoIdIn(userId, videoIds);
+
+        List<Pair<String, InputStream>> result = new ArrayList<>();
+
+        for (Video video : videos) {
+            try {
+                String path = video.getFilePath();
+                InputStream stream;
+
+                if (path.startsWith("http")) {
+                    URL url = new URL(path);
+                    stream = url.openStream();
+                } else {
+                    File file = new File(path);
+                    if (!file.exists()) continue;
+                    stream = new FileInputStream(file);
+                }
+
+                result.add(Pair.of("video_" + video.getVideoId() + ".mp4", stream));
+            } catch (Exception ignored) {}
+        }
+
+        return result;
+    }
+
+
 
 //    public List<Video> findAll() {
 //        return videoRepository.findAll();
