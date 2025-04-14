@@ -4,6 +4,6 @@ import lombok.Getter;
 import java.util.List;
 
 @Getter
-public class VideoDownloadRequest {
+public class VideoDeleteRequest {
     private List<Integer> videoIds;
 }

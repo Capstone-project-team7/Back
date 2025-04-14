@@ -38,7 +38,7 @@ public class Video {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "anomaly_id", nullable = false, unique = true)
     private AnomalyBehavior anomalyBehavior;
 }

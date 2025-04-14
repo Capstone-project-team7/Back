@@ -1,6 +1,7 @@
 package com.capstone.meerkatai.video.controller;
 
 import com.capstone.meerkatai.video.dto.GetVideoListResponse;
+import com.capstone.meerkatai.video.dto.VideoDeleteRequest;
 import com.capstone.meerkatai.video.dto.VideoDownloadRequest;
 import com.capstone.meerkatai.video.entity.Video;
 import com.capstone.meerkatai.video.service.VideoService;
@@ -54,9 +55,12 @@ public class VideoController {
 
     //JWT 작성 전 임시 코드
     @PostMapping("/download")
-    public ResponseEntity<?> downloadVideos(@RequestBody VideoDownloadRequest request) {
+    public ResponseEntity<?> downloadVideos(
+            @RequestParam("userId") Integer userId,
+            @RequestBody VideoDownloadRequest request
+    ) {
         try {
-            List<Pair<String, InputStream>> files = videoService.getVideoStreams(request.getUserId(), request.getVideoIds());
+            List<Pair<String, InputStream>> files = videoService.getVideoStreams(userId, request.getVideoIds());
 
             if (files.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -67,8 +71,8 @@ public class VideoController {
             ZipOutputStream zos = new ZipOutputStream(baos);
 
             for (Pair<String, InputStream> pair : files) {
-                zos.putNextEntry(new ZipEntry(pair.getFirst())); // 파일 이름
-                StreamUtils.copy(pair.getSecond(), zos);         // 파일 내용
+                zos.putNextEntry(new ZipEntry(pair.getFirst()));
+                StreamUtils.copy(pair.getSecond(), zos);
                 pair.getSecond().close();
                 zos.closeEntry();
             }
@@ -135,6 +139,62 @@ public class VideoController {
 //                    .body(Map.of("status", "error", "message", "비디오를 찾을 수 없거나 다운로드할 수 없습니다."));
 //        }
 //    }
+
+    //JWT 작성 전 임시 코드
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> deleteVideos(
+            @RequestParam("userId") Integer userId,
+            @RequestBody VideoDeleteRequest request
+    ) {
+        try {
+            // 비디오 삭제 요청 처리
+            List<Integer> deletedIds = videoService.deleteVideosByUser(userId, request.getVideoIds());
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "data", Map.of(
+                            "deletedIds", deletedIds
+                    )
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", "영상 삭제 중 오류가 발생했습니다."
+            ));
+        }
+    }
+
+
+    //JWT 토큰 버전 delete api
+//    @DeleteMapping("/delete")
+//    public ResponseEntity<?> deleteVideos(
+//            @RequestHeader("Authorization") String authHeader,
+//            @RequestBody VideoDeleteRequest request
+//    ) {
+//        try {
+//            // 1. JWT 토큰에서 userId 추출
+//            String token = authHeader.replace("Bearer ", "");
+//            Integer userId = jwtUtil.getUserIdFromToken(token).intValue();
+//
+//            // 2. 비디오 삭제 요청 처리
+//            List<Integer> deletedIds = videoService.deleteVideosByUser(userId, request.getVideoIds());
+//
+//            return ResponseEntity.ok(Map.of(
+//                    "status", "success",
+//                    "data", Map.of(
+//                            "deletedIds", deletedIds
+//                    )
+//            ));
+//
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+//                    "status", "error",
+//                    "message", "영상 삭제 중 오류가 발생했습니다."
+//            ));
+//        }
+//    }
+
 
 
 
