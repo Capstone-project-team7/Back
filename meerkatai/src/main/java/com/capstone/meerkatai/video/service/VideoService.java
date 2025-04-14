@@ -1,6 +1,7 @@
 package com.capstone.meerkatai.video.service;
 
 import com.capstone.meerkatai.video.dto.GetVideoListResponse;
+import com.capstone.meerkatai.video.dto.VideoDetailsResponse;
 import com.capstone.meerkatai.video.entity.Video;
 import com.capstone.meerkatai.video.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
@@ -101,6 +102,27 @@ public class VideoService {
                 .map(Video::getVideoId)
                 .collect(Collectors.toList());
     }
+
+    public VideoDetailsResponse getVideoDetails(Integer userId, Integer videoId) {
+        Video video = videoRepository.findByUserUserIdAndVideoId(userId, videoId)
+                .orElseThrow(() -> new RuntimeException("비디오 없음"));
+
+        return new VideoDetailsResponse(
+                video.getVideoId(),
+                video.getFilePath(),
+                video.getThumbnailPath(),
+                video.getDuration(),
+                video.getFileSize(),
+                video.getVideoStatus(),
+                video.getAnomalyBehavior().getAnomalyTime().toString(),
+                video.getStreamingVideo().getStreamingVideoId(),
+                video.getStreamingVideo().getCctv().getCctvId(),
+                video.getStreamingVideo().getCctv().getCctvName(),
+                video.getUser().getUserId(),
+                video.getAnomalyBehavior().getAnomalyBehaviorType().name()
+        );
+    }
+
 
 
 
