@@ -21,5 +21,5 @@ public class LogoutRequest {
    */
   @NotNull
   @JsonProperty("user_id")
-  private Long userId;
+  private Integer userId;
 }

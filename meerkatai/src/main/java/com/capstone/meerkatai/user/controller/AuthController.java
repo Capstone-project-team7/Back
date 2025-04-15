@@ -73,7 +73,7 @@ public class AuthController {
   //특정 사용자의 상세 정보를 조회
 
   @GetMapping("/info/{id}")
-  public ResponseEntity<ApiResponse<UserInfoResponse>> getUserInfo(@PathVariable Long id) {
+  public ResponseEntity<ApiResponse<UserInfoResponse>> getUserInfo(@PathVariable int id) {
     UserInfoResponse response = authService.getUserInfo(id);
     return ResponseEntity.ok(new ApiResponse<>("success", response));
   }

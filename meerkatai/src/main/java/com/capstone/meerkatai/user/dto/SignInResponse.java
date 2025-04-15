@@ -26,7 +26,7 @@ public class SignInResponse {
    * 인증된 사용자의 고유 식별자입니다.
    */
   @JsonProperty("user_id")
-  private Long userId;
+  private Integer userId;
 
   /**
    * 사용자의 최초 로그인 여부입니다.

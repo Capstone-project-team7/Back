@@ -20,7 +20,7 @@ public class UpdateUserRequest {
    */
   @NotNull
   @JsonProperty("user_id")
-  private Long userId;
+  private Integer userId;
 
   /**
    * 변경할 사용자의 이름입니다.

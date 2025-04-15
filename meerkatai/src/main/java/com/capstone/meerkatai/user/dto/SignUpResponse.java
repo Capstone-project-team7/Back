@@ -13,7 +13,7 @@ public class SignUpResponse {
 
 
   @JsonProperty("user_id")
-  private Long userId;
+  private Integer userId;
 
   @JsonProperty("user_email")
   private String userEmail;

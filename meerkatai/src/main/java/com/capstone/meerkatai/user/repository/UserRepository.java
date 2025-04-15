@@ -5,11 +5,12 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.capstone.meerkatai.user.entity.User;
+import com.capstone.meerkatai.user.entity.Role;
 
  // 사용자 엔티티에 접근하기 위한 JPA 레포지토리 인터페이스
 
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Integer> {
 
     //이메일로 사용자를 조회하는 메서드
     Optional<User> findByEmail(String email);

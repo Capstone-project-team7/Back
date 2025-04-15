@@ -21,7 +21,7 @@ public class WithdrawRequest {
    */
   @NotNull
   @JsonProperty("user_id")
-  private Long userId;
+  private Integer userId;
 
   /**
    * 사용자의 비밀번호입니다.
