@@ -3,6 +3,8 @@ package com.capstone.meerkatai.user.dto;
 import java.time.LocalDateTime;
 
 import com.capstone.meerkatai.user.entity.User;
+import com.capstone.meerkatai.user.entity.Role;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,6 +54,11 @@ public class UserResponse {
    */
   private boolean firstLogin;
 
+  /**
+   * 사용자의 역할입니다.
+   * USER: 일반 사용자, ADMIN: 관리자
+   */
+  private Role role;
 
   /**
    * 사용자의 마지막 로그인 시간입니다.
@@ -74,6 +81,7 @@ public class UserResponse {
         .notification(user.isNotification())
         .agreement(user.isAgreement())
         .firstLogin(user.isFirstLogin())
+        .role(user.getRole())
         .lastLoginAt(user.getLastLoginAt())
         .createdAt(user.getCreatedAt())
         .build();

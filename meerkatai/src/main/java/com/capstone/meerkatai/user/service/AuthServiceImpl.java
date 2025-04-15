@@ -3,6 +3,7 @@ package com.capstone.meerkatai.user.service;
 import com.capstone.meerkatai.global.jwt.JwtUtil;
 import com.capstone.meerkatai.user.dto.*;
 import com.capstone.meerkatai.user.entity.User;
+import com.capstone.meerkatai.user.entity.Role;
 import com.capstone.meerkatai.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -51,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
         .agreement(request.getAgreementStatus())
         .notification(true)
         .firstLogin(true)
+        .role(Role.USER)
         .build();
 
     userRepository.save(user);

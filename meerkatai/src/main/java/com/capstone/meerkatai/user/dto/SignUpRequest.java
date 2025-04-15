@@ -1,6 +1,7 @@
 package com.capstone.meerkatai.user.dto;
 
 import com.capstone.meerkatai.user.entity.User;
+import com.capstone.meerkatai.user.entity.Role;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -47,6 +48,7 @@ public class SignUpRequest {
         .notification(true)
         .agreement(agreementStatus)
         .firstLogin(true)
+        .role(Role.USER)
         .build();
   }
 }
