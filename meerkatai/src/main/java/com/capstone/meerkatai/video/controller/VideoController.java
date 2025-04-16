@@ -33,7 +33,7 @@ public class VideoController {
     // 예시: /api/v1/video/list/3?page=1
     @GetMapping("/list/{userId}")
     public ResponseEntity<GetVideoListResponse> getVideosByUser(
-            @PathVariable("userId") Integer userId,
+            @PathVariable("userId") Long userId,
             @RequestParam(value = "page", defaultValue = "1") int page
     ) {
         GetVideoListResponse response = videoService.getVideosByUser(userId, page);
@@ -57,7 +57,7 @@ public class VideoController {
     //JWT 작성 전 임시 코드
     @PostMapping("/download")
     public ResponseEntity<?> downloadVideos(
-            @RequestParam("userId") Integer userId,
+            @RequestParam("userId") Long userId,
             @RequestBody VideoDownloadRequest request
     ) {
         try {
@@ -144,7 +144,7 @@ public class VideoController {
     //JWT 작성 전 임시 코드
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteVideos(
-            @RequestParam("userId") Integer userId,
+            @RequestParam("userId") Long userId,
             @RequestBody VideoDeleteRequest request
     ) {
         try {
@@ -199,7 +199,7 @@ public class VideoController {
     @GetMapping("/view/{videoId}")
     public ResponseEntity<?> getVideoDetails(
             @PathVariable Integer videoId,
-            @RequestParam Integer userId
+            @RequestParam Long userId
     ) {
         try {
             VideoDetailsResponse response = videoService.getVideoDetails(userId, videoId);
