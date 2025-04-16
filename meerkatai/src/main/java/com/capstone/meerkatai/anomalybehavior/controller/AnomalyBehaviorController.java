@@ -13,25 +13,5 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AnomalyBehaviorController {
 
-    private final AnomalyBehaviorService anomalyBehaviorService;
 
-    @GetMapping
-    public List<AnomalyBehavior> getAll() {
-        return anomalyBehaviorService.findAll();
-    }
-
-    @GetMapping("/{id}")
-    public Optional<AnomalyBehavior> getById(@PathVariable Integer id) {
-        return anomalyBehaviorService.findById(id);
-    }
-
-    @PostMapping
-    public AnomalyBehavior create(@RequestBody AnomalyBehavior behavior) {
-        return anomalyBehaviorService.save(behavior);
-    }
-
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Integer id) {
-        anomalyBehaviorService.delete(id);
-    }
 }

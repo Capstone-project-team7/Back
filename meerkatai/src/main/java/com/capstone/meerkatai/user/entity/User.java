@@ -55,7 +55,7 @@ public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private Integer userId;
+    private Long userId;
 
     /**
      * 사용자의 이메일 주소입니다.

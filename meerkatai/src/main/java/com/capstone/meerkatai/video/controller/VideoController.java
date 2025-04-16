@@ -26,7 +26,7 @@ public class VideoController {
     private final UserRepository userRepository;
 
     // ✅ 공통 메서드: 현재 사용자 ID 조회
-    private Integer getCurrentUserId() {
+    private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
@@ -48,7 +48,7 @@ public class VideoController {
     public ResponseEntity<GetVideoListResponse> getVideosByUser(
             @RequestBody VideoListRequest request
     ) {
-        Integer userId = getCurrentUserId();
+        Long userId = getCurrentUserId();
 
         // ✅ 페이지 기본값 처리
         int page = Optional.ofNullable(request.getPage()).orElse(1);
@@ -80,7 +80,7 @@ public class VideoController {
             @RequestBody VideoDownloadRequest request
     ) {
         try {
-            Integer userId = getCurrentUserId();
+            Long userId = getCurrentUserId();
 
             List<Pair<String, InputStream>> files = videoService.getVideoStreams(userId, request.getVideoIds());
 
@@ -125,7 +125,7 @@ public class VideoController {
             @RequestBody VideoDeleteRequest request
     ) {
         try {
-            Integer userId = getCurrentUserId();
+            Long userId = getCurrentUserId();
 
             List<Long> deletedIds = videoService.deleteVideosByUser(userId, request.getVideoIds());
 
@@ -147,7 +147,7 @@ public class VideoController {
     @GetMapping("/view/{videoId}")
     public ResponseEntity<?> getVideoDetails(@PathVariable Long videoId) {
         try {
-            Integer userId = getCurrentUserId();
+            Long userId = getCurrentUserId();
             VideoDetailsResponse response = videoService.getVideoDetails(userId, videoId);
 
             return ResponseEntity.ok(Map.of("status", "success", "data", response));

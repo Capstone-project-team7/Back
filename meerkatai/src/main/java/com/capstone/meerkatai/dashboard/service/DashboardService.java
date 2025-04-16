@@ -14,23 +14,4 @@ public class DashboardService {
 
     private final DashboardRepository dashboardRepository;
 
-    public List<Dashboard> findAll() {
-        return dashboardRepository.findAll();
-    }
-
-    public Optional<Dashboard> findById(Integer id) {
-        return dashboardRepository.findById(id);
-    }
-
-    public List<Dashboard> findByUserId(Integer userId) {
-        return dashboardRepository.findByUserUserId(userId);
-    }
-
-    public Dashboard save(Dashboard dashboard) {
-        return dashboardRepository.save(dashboard);
-    }
-
-    public void delete(Integer id) {
-        dashboardRepository.deleteById(id);
-    }
 }

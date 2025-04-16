@@ -13,24 +13,4 @@ import java.util.Optional;
 public class CctvService {
 
     private final CctvRepository cctvRepository;
-
-    public List<Cctv> findAll() {
-        return cctvRepository.findAll();
-    }
-
-    public Optional<Cctv> findById(Integer id) {
-        return cctvRepository.findById(id);
-    }
-
-    public List<Cctv> findByUserId(Integer userId) {
-        return cctvRepository.findByUserUserId(userId);
-    }
-
-    public Cctv save(Cctv cctv) {
-        return cctvRepository.save(cctv);
-    }
-
-    public void delete(Integer id) {
-        cctvRepository.deleteById(id);
-    }
 }

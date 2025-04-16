@@ -13,28 +13,4 @@ import java.util.Optional;
 public class StreamingVideoService {
 
     private final StreamingVideoRepository streamingVideoRepository;
-
-    public List<StreamingVideo> findAll() {
-        return streamingVideoRepository.findAll();
-    }
-
-    public Optional<StreamingVideo> findById(Integer id) {
-        return streamingVideoRepository.findById(id);
-    }
-
-    public List<StreamingVideo> findByUserId(Integer userId) {
-        return streamingVideoRepository.findByUserUserId(userId);
-    }
-
-    public List<StreamingVideo> findByCctvId(Integer cctvId) {
-        return streamingVideoRepository.findByCctvCctvId(cctvId);
-    }
-
-    public StreamingVideo save(StreamingVideo streamingVideo) {
-        return streamingVideoRepository.save(streamingVideo);
-    }
-
-    public void delete(Integer id) {
-        streamingVideoRepository.deleteById(id);
-    }
 }

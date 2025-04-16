@@ -12,20 +12,4 @@ import java.util.Optional;
 public class StorageSpaceService {
 
     private final StorageSpaceRepository storageSpaceRepository;
-
-    public Optional<StorageSpace> findById(Integer id) {
-        return storageSpaceRepository.findById(id);
-    }
-
-    public Optional<StorageSpace> findByUserId(Integer userId) {
-        return storageSpaceRepository.findByUserUserId(userId);
-    }
-
-    public StorageSpace save(StorageSpace storageSpace) {
-        return storageSpaceRepository.save(storageSpace);
-    }
-
-    public void delete(Integer id) {
-        storageSpaceRepository.deleteById(id);
-    }
 }

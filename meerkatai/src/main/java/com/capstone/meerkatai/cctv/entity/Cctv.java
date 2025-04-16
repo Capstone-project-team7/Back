@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class Cctv {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer cctvId;
+    private Long cctvId;
 
     //null 이어도 될것같음
     @Column(length = 20, nullable = false)

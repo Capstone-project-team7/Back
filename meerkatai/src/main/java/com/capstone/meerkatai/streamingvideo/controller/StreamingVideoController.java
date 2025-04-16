@@ -14,34 +14,4 @@ import java.util.Optional;
 public class StreamingVideoController {
 
     private final StreamingVideoService streamingVideoService;
-
-    @GetMapping
-    public List<StreamingVideo> getAll() {
-        return streamingVideoService.findAll();
-    }
-
-    @GetMapping("/{id}")
-    public Optional<StreamingVideo> getById(@PathVariable Integer id) {
-        return streamingVideoService.findById(id);
-    }
-
-    @GetMapping("/user/{userId}")
-    public List<StreamingVideo> getByUserId(@PathVariable Integer userId) {
-        return streamingVideoService.findByUserId(userId);
-    }
-
-    @GetMapping("/cctv/{cctvId}")
-    public List<StreamingVideo> getByCctvId(@PathVariable Integer cctvId) {
-        return streamingVideoService.findByCctvId(cctvId);
-    }
-
-    @PostMapping
-    public StreamingVideo create(@RequestBody StreamingVideo streamingVideo) {
-        return streamingVideoService.save(streamingVideo);
-    }
-
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Integer id) {
-        streamingVideoService.delete(id);
-    }
 }

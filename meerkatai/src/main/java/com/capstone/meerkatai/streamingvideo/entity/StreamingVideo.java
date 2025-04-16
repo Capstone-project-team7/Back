@@ -10,7 +10,7 @@ import lombok.*;
 public class StreamingVideo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer streamingVideoId;
+    private Long streamingVideoId;
 
     @Column(nullable = false)
     private Boolean streamingVideoStatus;

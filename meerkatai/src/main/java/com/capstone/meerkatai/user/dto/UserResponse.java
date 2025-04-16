@@ -23,7 +23,7 @@ public class UserResponse {
   /**
    * 사용자의 고유 식별자입니다.
    */
-  private Integer userId;
+  private Long userId;
 
   /**
    * 사용자의 이메일 주소입니다.

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class Dashboard {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer dataId;
+    private Long dataId;
 
     @Column(nullable = false)
     private LocalDateTime time;

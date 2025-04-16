@@ -12,7 +12,7 @@ import lombok.Getter;
 public class UserInfoResponse {
 
   @JsonProperty("user_id")
-  private Integer userId;
+  private Long userId;
 
   @JsonProperty("user_email")
   private String userEmail;

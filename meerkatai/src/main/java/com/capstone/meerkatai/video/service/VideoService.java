@@ -34,7 +34,7 @@ public class VideoService {
 //        "anomaly_behavior_type":,
 //        "page": 1
 //    }
-    public GetVideoListResponse getVideosByUser(Integer userId, int page) {
+    public GetVideoListResponse getVideosByUser(Long userId, int page) {
         final int limit = 6;
         int offset = (page - 1) * limit;
 
@@ -52,14 +52,14 @@ public class VideoService {
         // 엔티티 → DTO 변환
         List<GetVideoListResponse.VideoDto> videoDtoList = pagedVideos.stream()
                 .map(video -> new GetVideoListResponse.VideoDto(
-                        video.getVideoId().longValue(),
+                        video.getVideoId(),
                         video.getFilePath(),
                         video.getThumbnailPath(),
                         video.getDuration(),
                         video.getFileSize(),
                         video.getVideoStatus(),
                         video.getAnomalyBehavior().getAnomalyTime().toString(), // 수정된 부분
-                        video.getStreamingVideo().getStreamingVideoId().longValue(),
+                        video.getStreamingVideo().getStreamingVideoId(),
                         video.getAnomalyBehavior().getAnomalyBehaviorType().name(), // 이 부분도 anomalyBehavior를 통해 접근해야 함
                         video.getStreamingVideo().getCctv().getCctvName()
                 ))
@@ -74,7 +74,7 @@ public class VideoService {
 
 
 //    필터 값 있는 경우(날짜 선택 OR 유형 선택 OR 날짜, 유형 선택 OR )
-public GetVideoListResponse getVideosByFilters(Integer userId, VideoListRequest req) {
+public GetVideoListResponse getVideosByFilters(Long userId, VideoListRequest req) {
     List<Video> allVideos = videoRepository.findByUserUserId(userId);
     Stream<Video> stream = allVideos.stream();
 
@@ -112,14 +112,14 @@ public GetVideoListResponse getVideosByFilters(Integer userId, VideoListRequest 
 
     List<GetVideoListResponse.VideoDto> videoDtoList = pagedVideos.stream()
             .map(video -> new GetVideoListResponse.VideoDto(
-                    video.getVideoId().longValue(),
+                    video.getVideoId(),
                     video.getFilePath(),
                     video.getThumbnailPath(),
                     video.getDuration(),
                     video.getFileSize(),
                     video.getVideoStatus(),
                     video.getAnomalyBehavior().getAnomalyTime().toString(),
-                    video.getStreamingVideo().getStreamingVideoId().longValue(),
+                    video.getStreamingVideo().getStreamingVideoId(),
                     video.getAnomalyBehavior().getAnomalyBehaviorType().name(),
                     video.getStreamingVideo().getCctv().getCctvName()
             ))
@@ -134,7 +134,7 @@ public GetVideoListResponse getVideosByFilters(Integer userId, VideoListRequest 
 
 
     // 비디오 다운로드 메소드
-    public List<Pair<String, InputStream>> getVideoStreams(Integer userId, List<Long> videoIds) {
+    public List<Pair<String, InputStream>> getVideoStreams(Long userId, List<Long> videoIds) {
         List<Video> videos = videoRepository.findByUser_UserIdAndVideoIdIn(userId, videoIds);
 
         List<Pair<String, InputStream>> result = new ArrayList<>();
@@ -161,7 +161,7 @@ public GetVideoListResponse getVideosByFilters(Integer userId, VideoListRequest 
     }
 
     //비디오 삭제 메소드
-    public List<Long> deleteVideosByUser(Integer userId, List<Long> videoIds) {
+    public List<Long> deleteVideosByUser(Long userId, List<Long> videoIds) {
         // 1. userId와 videoIds로 사용자 본인의 영상만 필터링
         List<Video> videos = videoRepository.findByUser_UserIdAndVideoIdIn(userId, videoIds);
 
@@ -175,7 +175,7 @@ public GetVideoListResponse getVideosByFilters(Integer userId, VideoListRequest 
     }
 
     // 비디오 세부 내용 조회 메소드
-    public VideoDetailsResponse getVideoDetails(Integer userId, Long videoId) {
+    public VideoDetailsResponse getVideoDetails(Long userId, Long videoId) {
         Video video = videoRepository.findByUserUserIdAndVideoId(userId, videoId)
                 .orElseThrow(() -> new RuntimeException("비디오 없음"));
 

@@ -6,9 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-public interface VideoRepository extends JpaRepository<Video, Integer> {
-    List<Video> findByUserUserId(Integer userId);
-    List<Video> findByStreamingVideoStreamingVideoId(Integer streamingVideoId);
-    List<Video> findByUser_UserIdAndVideoIdIn(Integer userId, List<Long> videoIds);
-    Optional<Video> findByUserUserIdAndVideoId(Integer userId, Long videoId);
+public interface VideoRepository extends JpaRepository<Video, Long> {
+    List<Video> findByUserUserId(Long userId);
+    List<Video> findByStreamingVideoStreamingVideoId(Long streamingVideoId);
+    List<Video> findByUser_UserIdAndVideoIdIn(Long userId, List<Long> videoIds);
+    Optional<Video> findByUserUserIdAndVideoId(Long userId, Long videoId);
 }

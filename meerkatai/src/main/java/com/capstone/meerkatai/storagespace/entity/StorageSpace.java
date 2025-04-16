@@ -9,7 +9,7 @@ import lombok.*;
 public class StorageSpace {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer storageId;
+    private Long storageId;
 
     @Column(nullable = false)
     private Integer totalSpace;

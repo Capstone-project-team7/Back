@@ -29,7 +29,7 @@ public interface AuthService {
   /**
    * 사용자 정보를 조회하는 메서드입니다.
    */
-  UserInfoResponse getUserInfo(Integer userId);
+  UserInfoResponse getUserInfo(Long userId);
 
   /**
    * 사용자 로그아웃을 처리하는 메서드입니다.

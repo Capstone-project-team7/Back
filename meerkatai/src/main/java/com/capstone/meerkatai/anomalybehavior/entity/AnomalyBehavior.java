@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public class AnomalyBehavior {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer anomalyId;
+    private Long anomalyId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
