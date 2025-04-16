@@ -31,7 +31,7 @@ public class UserService {
     /**
      * ID로 특정 사용자를 조회하는 메서드입니다.
      */
-    public Optional<User> findById(Integer userId) {
+    public Optional<User> findById(Long userId) {
         return userRepository.findById(userId);
     }
 
@@ -55,6 +55,6 @@ public class UserService {
      * 사용자를 삭제하는 메서드입니다.
      */
     @Transactional
-    public void deleteById(Integer userId) { userRepository.deleteById(userId);
+    public void deleteById(Long userId) { userRepository.deleteById(userId);
     }
 }

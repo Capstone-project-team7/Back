@@ -15,7 +15,7 @@ public class UpdateUserResponse {
    * 수정된 사용자의 ID입니다.
    */
   @JsonProperty("user_id")
-  private Integer userId;
+  private Long userId;
 
   /**
    * 수정된 사용자의 이름입니다.

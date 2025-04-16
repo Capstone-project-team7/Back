@@ -26,7 +26,7 @@ public class CctvController {
     }
 
     @GetMapping("/user/{userId}")
-    public List<Cctv> getByUserId(@PathVariable Integer userId) {
+    public List<Cctv> getByUserId(@PathVariable int userId) {
         return cctvService.findByUserId(userId);
     }
 

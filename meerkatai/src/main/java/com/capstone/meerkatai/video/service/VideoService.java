@@ -23,7 +23,7 @@ public class VideoService {
 
     private final VideoRepository videoRepository;
 
-    public GetVideoListResponse getVideosByUser(Integer userId, int page) {
+    public GetVideoListResponse getVideosByUser(Long userId, int page) {
         final int limit = 6;
         int offset = (page - 1) * limit;
 
@@ -64,7 +64,7 @@ public class VideoService {
 
 
 
-    public List<Pair<String, InputStream>> getVideoStreams(Integer userId, List<Integer> videoIds) {
+    public List<Pair<String, InputStream>> getVideoStreams(Long userId, List<Integer> videoIds) {
         List<Video> videos = videoRepository.findByUser_UserIdAndVideoIdIn(userId, videoIds);
 
         List<Pair<String, InputStream>> result = new ArrayList<>();
@@ -90,7 +90,7 @@ public class VideoService {
         return result;
     }
 
-    public List<Integer> deleteVideosByUser(Integer userId, List<Integer> videoIds) {
+    public List<Integer> deleteVideosByUser(Long userId, List<Integer> videoIds) {
         // 1. userId와 videoIds로 사용자 본인의 영상만 필터링
         List<Video> videos = videoRepository.findByUser_UserIdAndVideoIdIn(userId, videoIds);
 
@@ -103,7 +103,7 @@ public class VideoService {
                 .collect(Collectors.toList());
     }
 
-    public VideoDetailsResponse getVideoDetails(Integer userId, Integer videoId) {
+    public VideoDetailsResponse getVideoDetails(Long userId, Integer videoId) {
         Video video = videoRepository.findByUserUserIdAndVideoId(userId, videoId)
                 .orElseThrow(() -> new RuntimeException("비디오 없음"));
 

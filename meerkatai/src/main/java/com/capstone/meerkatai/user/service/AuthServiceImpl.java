@@ -121,7 +121,7 @@ public class AuthServiceImpl implements AuthService {
    */
   @Override
   @Transactional(readOnly = true)
-  public UserInfoResponse getUserInfo(Integer userId) {
+  public UserInfoResponse getUserInfo(Long userId) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 

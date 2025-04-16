@@ -16,7 +16,7 @@ public class VideoDetailsResponse {
     private Integer streaming_video_id;
     private Integer cctv_id;
     private String cctv_name;
-    private Integer user_id;
+    private Long user_id;
     private String anomaly_type;
 }
 
