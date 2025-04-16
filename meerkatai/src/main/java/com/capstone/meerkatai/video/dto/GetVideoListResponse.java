@@ -34,6 +34,7 @@ public class GetVideoListResponse {
         private String created_at;
         private Long streaming_video_id;
         private String anomaly_behavior_type;
+        private String cctv_name;
     }
 
     @Getter

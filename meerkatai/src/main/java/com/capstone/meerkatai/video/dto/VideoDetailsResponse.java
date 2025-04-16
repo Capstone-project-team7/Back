@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class VideoDetailsResponse {
-    private Integer video_id;
+    private Long video_id;
     private String file_path;
     private String thumbnail_path;
     private Integer duration;

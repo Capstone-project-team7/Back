@@ -7,10 +7,10 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class VideoFilterRequest {
+public class VideoListRequest {
     private String start_date;
     private String end_date;
-    private String anomaly_type;
-    private int page;
+    private String anomaly_behavior_type;
+    private Integer page;
 }
 

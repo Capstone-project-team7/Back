@@ -9,6 +9,6 @@ import java.util.Optional;
 public interface VideoRepository extends JpaRepository<Video, Integer> {
     List<Video> findByUserUserId(Integer userId);
     List<Video> findByStreamingVideoStreamingVideoId(Integer streamingVideoId);
-    List<Video> findByUser_UserIdAndVideoIdIn(Integer userId, List<Integer> videoIds);
-    Optional<Video> findByUserUserIdAndVideoId(Integer userId, Integer videoId);
+    List<Video> findByUser_UserIdAndVideoIdIn(Integer userId, List<Long> videoIds);
+    Optional<Video> findByUserUserIdAndVideoId(Integer userId, Long videoId);
 }
