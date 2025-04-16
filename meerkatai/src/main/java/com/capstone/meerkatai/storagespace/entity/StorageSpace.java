@@ -8,6 +8,7 @@ import lombok.*;
 @Getter @Setter @NoArgsConstructor
 public class StorageSpace {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer storageId;
 
     @Column(nullable = false)

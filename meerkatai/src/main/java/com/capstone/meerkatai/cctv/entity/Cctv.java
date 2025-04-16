@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor
 public class Cctv {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer cctvId;
 
     //null 이어도 될것같음

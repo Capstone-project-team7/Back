@@ -9,6 +9,7 @@ import lombok.*;
 @Getter @Setter @NoArgsConstructor
 public class StreamingVideo {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer streamingVideoId;
 
     @Column(nullable = false)

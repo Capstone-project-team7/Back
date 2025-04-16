@@ -13,6 +13,7 @@ import lombok.*;
 public class Video {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long videoId;
 
     @Column(nullable = false, length = 250)
