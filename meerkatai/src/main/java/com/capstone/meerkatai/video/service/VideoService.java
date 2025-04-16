@@ -2,6 +2,7 @@ package com.capstone.meerkatai.video.service;
 
 import com.capstone.meerkatai.video.dto.GetVideoListResponse;
 import com.capstone.meerkatai.video.dto.VideoDetailsResponse;
+import com.capstone.meerkatai.video.dto.VideoFilterRequest;
 import com.capstone.meerkatai.video.entity.Video;
 import com.capstone.meerkatai.video.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +13,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URL;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -122,6 +125,57 @@ public class VideoService {
                 video.getAnomalyBehavior().getAnomalyBehaviorType().name()
         );
     }
+
+    public GetVideoListResponse getFilteredVideos(Integer userId, VideoFilterRequest req) {
+        List<Video> allVideos = videoRepository.findByUserUserId(userId);
+
+        // 조건 필터링
+        Stream<Video> stream = allVideos.stream();
+
+        if (req.getStart_date() != null && req.getEnd_date() != null) {
+            LocalDate start = LocalDate.parse(req.getStart_date());
+            LocalDate end = LocalDate.parse(req.getEnd_date());
+
+            stream = stream.filter(video -> {
+                LocalDate date = video.getAnomalyBehavior().getAnomalyTime().toLocalDate();
+                return !date.isBefore(start) && !date.isAfter(end);
+            });
+        }
+
+        if (req.getAnomaly_type() != null && !req.getAnomaly_type().isBlank()) {
+            stream = stream.filter(video ->
+                    video.getAnomalyBehavior().getAnomalyBehaviorType().name().equalsIgnoreCase(req.getAnomaly_type())
+            );
+        }
+
+        List<Video> filtered = stream.toList();
+
+        // 페이징 처리
+        int limit = 6;
+        int total = filtered.size();
+        int pages = (int) Math.ceil((double) total / limit);
+        int offset = (req.getPage() - 1) * limit;
+        List<Video> pagedVideos = filtered.stream().skip(offset).limit(limit).toList();
+
+        // DTO 변환
+        List<GetVideoListResponse.VideoDto> videoDtoList = pagedVideos.stream()
+                .map(video -> new GetVideoListResponse.VideoDto(
+                        video.getVideoId().longValue(),
+                        video.getFilePath(),
+                        video.getThumbnailPath(),
+                        video.getDuration(),
+                        video.getFileSize(),
+                        video.getVideoStatus(),
+                        video.getAnomalyBehavior().getAnomalyTime().toString(),
+                        video.getStreamingVideo().getStreamingVideoId().longValue(),
+                        video.getAnomalyBehavior().getAnomalyBehaviorType().name()
+                ))
+                .toList();
+
+        GetVideoListResponse.Pagination pagination = new GetVideoListResponse.Pagination(total, req.getPage(), pages, limit);
+        return new GetVideoListResponse("success", new GetVideoListResponse.Data(videoDtoList, pagination));
+    }
+
 
 
 

@@ -1,9 +1,6 @@
 package com.capstone.meerkatai.video.controller;
 
-import com.capstone.meerkatai.video.dto.GetVideoListResponse;
-import com.capstone.meerkatai.video.dto.VideoDeleteRequest;
-import com.capstone.meerkatai.video.dto.VideoDetailsResponse;
-import com.capstone.meerkatai.video.dto.VideoDownloadRequest;
+import com.capstone.meerkatai.video.dto.*;
 import com.capstone.meerkatai.video.entity.Video;
 import com.capstone.meerkatai.video.service.VideoService;
 import lombok.RequiredArgsConstructor;
@@ -196,6 +193,7 @@ public class VideoController {
 //        }
 //    }
 
+    //JWT 작성 전 임시 코드
     @GetMapping("/view/{videoId}")
     public ResponseEntity<?> getVideoDetails(
             @PathVariable Integer videoId,
@@ -241,6 +239,30 @@ public class VideoController {
 //            ));
 //        }
 //    }
+
+    @PostMapping("/list/filters")
+    public ResponseEntity<?> getFilteredVideos(
+            @RequestParam("userId") Integer userId,
+            @RequestBody VideoFilterRequest filterRequest
+    ) {
+        GetVideoListResponse response = videoService.getFilteredVideos(userId, filterRequest);
+        return ResponseEntity.ok(Map.of("status", "success", "data", response));
+    }
+
+
+
+//    @PostMapping("/list/filters")
+//    public ResponseEntity<?> getFilteredVideos(
+//            @RequestHeader("Authorization") String authHeader,
+//            @RequestBody VideoFilterRequest filterRequest
+//    ) {
+//        String token = authHeader.replace("Bearer ", "");
+//        Integer userId = jwtUtil.getUserIdFromToken(token).intValue();
+//
+//        GetVideoListResponse response = videoService.getFilteredVideos(userId, filterRequest);
+//        return ResponseEntity.ok(Map.of("status", "success", "data", response));
+//    }
+
 
 
 
