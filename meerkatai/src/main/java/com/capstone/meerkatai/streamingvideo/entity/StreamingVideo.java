@@ -25,7 +25,7 @@ public class StreamingVideo {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer streamingVideoId;
+    private Long streamingVideoId;
 
     /**
      * 스트리밍 비디오를 소유한 사용자 정보입니다.

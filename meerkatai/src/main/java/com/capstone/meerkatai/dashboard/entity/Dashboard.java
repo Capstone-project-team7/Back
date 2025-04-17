@@ -10,7 +10,8 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor
 public class Dashboard {
     @Id
-    private Integer dataId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long dataId;
 
     @Column(nullable = false)
     private LocalDateTime time;

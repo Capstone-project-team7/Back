@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor
 public class AnomalyBehavior {
     @Id
-    private Integer anomalyId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long anomalyId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

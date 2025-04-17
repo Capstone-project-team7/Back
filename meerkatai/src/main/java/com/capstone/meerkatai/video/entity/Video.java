@@ -13,7 +13,8 @@ import lombok.*;
 public class Video {
 
     @Id
-    private Integer videoId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long videoId;
 
     @Column(nullable = false, length = 250)
     private String filePath;

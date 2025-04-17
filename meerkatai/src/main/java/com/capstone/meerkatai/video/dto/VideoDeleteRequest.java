@@ -5,5 +5,5 @@ import java.util.List;
 
 @Getter
 public class VideoDeleteRequest {
-    private List<Integer> videoIds;
+    private List<Long> videoIds;
 }
