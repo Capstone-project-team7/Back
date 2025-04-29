@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface StorageSpaceRepository extends JpaRepository<StorageSpace, Long> {
-    Optional<StorageSpace> findByUserUserId(Integer userId);
+    Optional<StorageSpace> findByUserUserId(Long userId);
 }

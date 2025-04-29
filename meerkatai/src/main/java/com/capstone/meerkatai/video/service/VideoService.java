@@ -27,7 +27,7 @@ public class VideoService {
     private final VideoRepository videoRepository;
 
 
-//    필터 값 없는 경우(홈페이지 이동 OR 필터 값 없이 페이지 이동)
+    //    필터 값 없는 경우(홈페이지 이동 OR 필터 값 없이 페이지 이동)
 //    {
 //        "start_date":,
 //        "end_date":,
@@ -45,25 +45,25 @@ public class VideoService {
 
         // Java로 페이징 처리
         List<Video> pagedVideos = allVideos.stream()
-                .skip(offset)
-                .limit(limit)
-                .toList();
+            .skip(offset)
+            .limit(limit)
+            .toList();
 
         // 엔티티 → DTO 변환
         List<GetVideoListResponse.VideoDto> videoDtoList = pagedVideos.stream()
-                .map(video -> new GetVideoListResponse.VideoDto(
-                        video.getVideoId(),
-                        video.getFilePath(),
-                        video.getThumbnailPath(),
-                        video.getDuration(),
-                        video.getFileSize(),
-                        video.getVideoStatus(),
-                        video.getAnomalyBehavior().getAnomalyTime().toString(), // 수정된 부분
-                        video.getStreamingVideo().getStreamingVideoId(),
-                        video.getAnomalyBehavior().getAnomalyBehaviorType().name(), // 이 부분도 anomalyBehavior를 통해 접근해야 함
-                        video.getStreamingVideo().getCctv().getCctvName()
-                ))
-                .collect(Collectors.toList());
+            .map(video -> new GetVideoListResponse.VideoDto(
+                video.getVideoId(),
+                video.getFilePath(),
+                video.getThumbnailPath(),
+                video.getDuration(),
+                video.getFileSize(),
+                video.getVideoStatus(),
+                video.getAnomalyBehavior().getAnomalyTime().toString(), // 수정된 부분
+                video.getStreamingVideo().getStreamingVideoId(),
+                video.getAnomalyBehavior().getAnomalyBehaviorType().name(), // 이 부분도 anomalyBehavior를 통해 접근해야 함
+                video.getStreamingVideo().getCctv().getCctvName()
+            ))
+            .collect(Collectors.toList());
 
         // pagination 구성
         GetVideoListResponse.Pagination pagination = new GetVideoListResponse.Pagination(total, page, pages, limit);
@@ -73,61 +73,61 @@ public class VideoService {
     }
 
 
-//    필터 값 있는 경우(날짜 선택 OR 유형 선택 OR 날짜, 유형 선택 OR )
-public GetVideoListResponse getVideosByFilters(Long userId, VideoListRequest req) {
-    List<Video> allVideos = videoRepository.findByUserUserId(userId);
-    Stream<Video> stream = allVideos.stream();
+    //    필터 값 있는 경우(날짜 선택 OR 유형 선택 OR 날짜, 유형 선택 OR )
+    public GetVideoListResponse getVideosByFilters(Long userId, VideoListRequest req) {
+        List<Video> allVideos = videoRepository.findByUserUserId(userId);
+        Stream<Video> stream = allVideos.stream();
 
-    // 날짜 필터 적용
-    if (req.getStart_date() != null && !req.getStart_date().isBlank()
+        // 날짜 필터 적용
+        if (req.getStart_date() != null && !req.getStart_date().isBlank()
             && req.getEnd_date() != null && !req.getEnd_date().isBlank()) {
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate start = LocalDate.parse(req.getStart_date(), formatter);
-        LocalDate end = LocalDate.parse(req.getEnd_date(), formatter);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate start = LocalDate.parse(req.getStart_date(), formatter);
+            LocalDate end = LocalDate.parse(req.getEnd_date(), formatter);
 
-        stream = stream.filter(video -> {
-            LocalDate date = video.getAnomalyBehavior().getAnomalyTime().toLocalDate();
-            return !date.isBefore(start) && !date.isAfter(end);
-        });
-    }
+            stream = stream.filter(video -> {
+                LocalDate date = video.getAnomalyBehavior().getAnomalyTime().toLocalDate();
+                return !date.isBefore(start) && !date.isAfter(end);
+            });
+        }
 
-    // 이상행동 유형 필터 적용
-    if (req.getAnomaly_behavior_type() != null && !req.getAnomaly_behavior_type().isBlank()) {
-        stream = stream.filter(video ->
+        // 이상행동 유형 필터 적용
+        if (req.getAnomaly_behavior_type() != null && !req.getAnomaly_behavior_type().isBlank()) {
+            stream = stream.filter(video ->
                 video.getAnomalyBehavior().getAnomalyBehaviorType().name().equalsIgnoreCase(req.getAnomaly_behavior_type())
-        );
-    }
+            );
+        }
 
-    List<Video> filtered = stream.toList();
+        List<Video> filtered = stream.toList();
 
-    // 페이지 값이 null이거나 1보다 작으면 기본값 1로 설정
-    int page = (req.getPage() == null || req.getPage() < 1) ? 1 : req.getPage();
-    int limit = 6;
-    int total = filtered.size();
-    int pages = (int) Math.ceil((double) total / limit);
-    int offset = (page - 1) * limit;
+        // 페이지 값이 null이거나 1보다 작으면 기본값 1로 설정
+        int page = (req.getPage() == null || req.getPage() < 1) ? 1 : req.getPage();
+        int limit = 6;
+        int total = filtered.size();
+        int pages = (int) Math.ceil((double) total / limit);
+        int offset = (page - 1) * limit;
 
-    List<Video> pagedVideos = filtered.stream().skip(offset).limit(limit).toList();
+        List<Video> pagedVideos = filtered.stream().skip(offset).limit(limit).toList();
 
-    List<GetVideoListResponse.VideoDto> videoDtoList = pagedVideos.stream()
+        List<GetVideoListResponse.VideoDto> videoDtoList = pagedVideos.stream()
             .map(video -> new GetVideoListResponse.VideoDto(
-                    video.getVideoId(),
-                    video.getFilePath(),
-                    video.getThumbnailPath(),
-                    video.getDuration(),
-                    video.getFileSize(),
-                    video.getVideoStatus(),
-                    video.getAnomalyBehavior().getAnomalyTime().toString(),
-                    video.getStreamingVideo().getStreamingVideoId(),
-                    video.getAnomalyBehavior().getAnomalyBehaviorType().name(),
-                    video.getStreamingVideo().getCctv().getCctvName()
+                video.getVideoId(),
+                video.getFilePath(),
+                video.getThumbnailPath(),
+                video.getDuration(),
+                video.getFileSize(),
+                video.getVideoStatus(),
+                video.getAnomalyBehavior().getAnomalyTime().toString(),
+                video.getStreamingVideo().getStreamingVideoId(),
+                video.getAnomalyBehavior().getAnomalyBehaviorType().name(),
+                video.getStreamingVideo().getCctv().getCctvName()
             ))
             .toList();
 
-    GetVideoListResponse.Pagination pagination = new GetVideoListResponse.Pagination(total, page, pages, limit);
-    return new GetVideoListResponse("success", new GetVideoListResponse.Data(videoDtoList, pagination));
-}
+        GetVideoListResponse.Pagination pagination = new GetVideoListResponse.Pagination(total, page, pages, limit);
+        return new GetVideoListResponse("success", new GetVideoListResponse.Data(videoDtoList, pagination));
+    }
 
 
 
@@ -170,28 +170,28 @@ public GetVideoListResponse getVideosByFilters(Long userId, VideoListRequest req
 
         // 3. 실제 삭제된 ID만 반환
         return videos.stream()
-                .map(Video::getVideoId)
-                .collect(Collectors.toList());
+            .map(Video::getVideoId)
+            .collect(Collectors.toList());
     }
 
     // 비디오 세부 내용 조회 메소드
     public VideoDetailsResponse getVideoDetails(Long userId, Long videoId) {
         Video video = videoRepository.findByUserUserIdAndVideoId(userId, videoId)
-                .orElseThrow(() -> new RuntimeException("비디오 없음"));
+            .orElseThrow(() -> new RuntimeException("비디오 없음"));
 
         return new VideoDetailsResponse(
-                video.getVideoId(),
-                video.getFilePath(),
-                video.getThumbnailPath(),
-                video.getDuration(),
-                video.getFileSize(),
-                video.getVideoStatus(),
-                video.getAnomalyBehavior().getAnomalyTime().toString(),
-                video.getStreamingVideo().getStreamingVideoId(),
-                video.getStreamingVideo().getCctv().getCctvId(),
-                video.getStreamingVideo().getCctv().getCctvName(),
-                video.getUser().getUserId(),
-                video.getAnomalyBehavior().getAnomalyBehaviorType().name()
+            video.getVideoId(),
+            video.getFilePath(),
+            video.getThumbnailPath(),
+            video.getDuration(),
+            video.getFileSize(),
+            video.getVideoStatus(),
+            video.getAnomalyBehavior().getAnomalyTime().toString(),
+            video.getStreamingVideo().getStreamingVideoId(),
+            video.getStreamingVideo().getCctv().getCctvId(),
+            video.getStreamingVideo().getCctv().getCctvName(),
+            video.getUser().getUserId(),
+            video.getAnomalyBehavior().getAnomalyBehaviorType().name()
         );
     }
 }

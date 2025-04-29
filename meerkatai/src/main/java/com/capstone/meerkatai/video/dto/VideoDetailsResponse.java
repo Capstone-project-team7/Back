@@ -19,4 +19,3 @@ public class VideoDetailsResponse {
     private Long user_id;
     private String anomaly_type;
 }
-

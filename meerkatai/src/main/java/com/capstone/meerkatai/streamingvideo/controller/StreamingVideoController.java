@@ -13,5 +13,5 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class StreamingVideoController {
 
-    private final StreamingVideoService streamingVideoService;
+  private final StreamingVideoService streamingVideoService;
 }

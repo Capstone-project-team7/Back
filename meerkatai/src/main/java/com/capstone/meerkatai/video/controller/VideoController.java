@@ -31,8 +31,8 @@ public class VideoController {
         String email = authentication.getName();
 
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."))
-                .getUserId(); // User 엔티티에서 실제 ID 필드명에 맞게 수정
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."))
+            .getUserId(); // User 엔티티에서 실제 ID 필드명에 맞게 수정
     }
 
 
@@ -46,7 +46,7 @@ public class VideoController {
     //    }
     @PostMapping("/list")
     public ResponseEntity<GetVideoListResponse> getVideosByUser(
-            @RequestBody VideoListRequest request
+        @RequestBody VideoListRequest request
     ) {
         Long userId = getCurrentUserId();
 
@@ -56,8 +56,8 @@ public class VideoController {
 
         // 필터 파라미터 존재 여부 확인
         boolean hasFilters = (request.getStart_date() != null && !request.getStart_date().isBlank()) ||
-                (request.getEnd_date() != null && !request.getEnd_date().isBlank()) ||
-                (request.getAnomaly_behavior_type() != null && !request.getAnomaly_behavior_type().isBlank());
+            (request.getEnd_date() != null && !request.getEnd_date().isBlank()) ||
+            (request.getAnomaly_behavior_type() != null && !request.getAnomaly_behavior_type().isBlank());
 
         GetVideoListResponse response;
         if (hasFilters) {
@@ -77,7 +77,7 @@ public class VideoController {
     //    }
     @PostMapping("/download")
     public ResponseEntity<?> downloadVideos(
-            @RequestBody VideoDownloadRequest request
+        @RequestBody VideoDownloadRequest request
     ) {
         try {
             Long userId = getCurrentUserId();
@@ -86,7 +86,7 @@ public class VideoController {
 
             if (files.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("status", "error", "message", "비디오를 찾을 수 없거나 다운로드할 수 없습니다."));
+                    .body(Map.of("status", "error", "message", "비디오를 찾을 수 없거나 다운로드할 수 없습니다."));
             }
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -106,12 +106,12 @@ public class VideoController {
             headers.setContentDisposition(ContentDisposition.attachment().filename("videos.zip").build());
 
             return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(baos.toByteArray());
+                .headers(headers)
+                .body(baos.toByteArray());
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("status", "error", "message", "비디오를 찾을 수 없거나 다운로드할 수 없습니다."));
+                .body(Map.of("status", "error", "message", "비디오를 찾을 수 없거나 다운로드할 수 없습니다."));
         }
     }
 
@@ -122,7 +122,7 @@ public class VideoController {
     //    }
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteVideos(
-            @RequestBody VideoDeleteRequest request
+        @RequestBody VideoDeleteRequest request
     ) {
         try {
             Long userId = getCurrentUserId();
@@ -130,14 +130,14 @@ public class VideoController {
             List<Long> deletedIds = videoService.deleteVideosByUser(userId, request.getVideoIds());
 
             return ResponseEntity.ok(Map.of(
-                    "status", "success",
-                    "data", Map.of("deletedIds", deletedIds)
+                "status", "success",
+                "data", Map.of("deletedIds", deletedIds)
             ));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                    "status", "error",
-                    "message", "영상 삭제 중 오류가 발생했습니다."
+                "status", "error",
+                "message", "영상 삭제 중 오류가 발생했습니다."
             ));
         }
     }
@@ -154,8 +154,8 @@ public class VideoController {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                    "status", "error",
-                    "message", "비디오 정보를 찾을 수 없습니다."
+                "status", "error",
+                "message", "비디오 정보를 찾을 수 없습니다."
             ));
         }
     }

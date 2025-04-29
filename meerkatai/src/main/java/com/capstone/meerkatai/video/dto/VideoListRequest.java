@@ -8,9 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VideoListRequest {
-    private String start_date;
-    private String end_date;
-    private String anomaly_behavior_type;
-    private Integer page;
+  private String start_date;
+  private String end_date;
+  private String anomaly_behavior_type;
+  private Integer page;
 }
-

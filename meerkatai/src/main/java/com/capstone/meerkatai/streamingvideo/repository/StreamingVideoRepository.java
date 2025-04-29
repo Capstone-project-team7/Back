@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface StreamingVideoRepository extends JpaRepository<StreamingVideo, Long> {
-    List<StreamingVideo> findByUserUserId(Integer userId);
-    List<StreamingVideo> findByCctvCctvId(Integer cctvId);
+  List<StreamingVideo> findByUserUserId(Long userId);
+  List<StreamingVideo> findByCctvCctvId(Long cctvId);
 }

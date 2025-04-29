@@ -12,5 +12,5 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class StreamingVideoService {
 
-    private final StreamingVideoRepository streamingVideoRepository;
+  private final StreamingVideoRepository streamingVideoRepository;
 }
