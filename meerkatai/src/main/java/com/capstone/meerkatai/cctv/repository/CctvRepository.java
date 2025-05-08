@@ -4,6 +4,7 @@ import com.capstone.meerkatai.cctv.entity.Cctv;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * CCTV 엔티티에 대한 데이터 액세스 계층(Repository)입니다.
@@ -26,4 +27,5 @@ public interface CctvRepository extends JpaRepository<Cctv, Long> {
      */
     //List<Cctv> findByUser_Id(Long Id);
     List<Cctv> findByUser_UserId(Long userId);
+    Optional<Cctv> findByCctvIdAndUserUserId(Long cctvId, Long userId);
 }
