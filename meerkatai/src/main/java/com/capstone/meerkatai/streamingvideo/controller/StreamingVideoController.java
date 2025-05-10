@@ -11,7 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/streaming-videos")
+@RequestMapping("/api/v1/streaming-video")
 @RequiredArgsConstructor
 public class StreamingVideoController {
 
@@ -29,14 +29,15 @@ public class StreamingVideoController {
   }
 
   /**
-   * ✅ 사용자가 버튼 클릭 시:
-   * - RTSP 연결 시도
-   * - 연결 가능하면 StreamingVideo 테이블 생성
-   * - FastAPI에 사용자 + CCTV 정보 전송
+   * ✅ 사용자가 활성화 버튼 클릭 시:
+   * - 해당 ｃｃｔｖ RTSP 연결 시도
+   * － 해당 ＣＣＴＶＩＤ 아닌 ｃｃｔｖ 비활성화 상태로 ＤＢ에 저장 및 ＦａｓｔＡＰＩ에 스트리밍 중지 요청
+   * - 해당 ｃｃｔｖ RTSP 연결 가능하면 StreamingVideo 테이블 생성
+   * - FastAPI에 사용자 + CCTV 정보 전송 및 스트리밍 연결 요청
    */
 
-  @PostMapping("/connect")
-  public ResponseEntity<String> connectToCctv(@RequestParam Long cctvId) {
+  @PostMapping("/connect/{cctvId}")
+  public ResponseEntity<String> connectToCctv(@PathVariable Long cctvId) {
     //사용자 조회
     Long userId = getCurrentUserId();
 
@@ -45,12 +46,21 @@ public class StreamingVideoController {
             .orElseThrow(() -> new RuntimeException("해당 사용자의 CCTV를 찾을 수 없습니다."));
 
     // 2. RTSP URL 생성
-    String rtspUrl = String.format("rtsp://%s:%s@%s/%s",
+//    String rtspUrl = String.format("rtsp://%s:%s@%s/%s",
+//            cctv.getCctvAdmin(),
+//            cctv.getCctvPassword(),
+//            cctv.getIpAddress(),
+//            cctv.getCctvPath()
+//    );
+
+    String rtspUrl = String.format("rtsp://%s:%s@%s:%d/%s",
             cctv.getCctvAdmin(),
             cctv.getCctvPassword(),
             cctv.getIpAddress(),
+            1945, // 하드코딩된 포트
             cctv.getCctvPath()
     );
+
 
     // 3. 연결 테스트 + 저장 + FastAPI 전송
     boolean connected = streamingVideoService.connectAndRegister(userId, cctvId, rtspUrl);
@@ -59,5 +69,22 @@ public class StreamingVideoController {
             ? ResponseEntity.ok("✅ RTSP 연결 성공 및 연동 완료")
             : ResponseEntity.status(500).body("❌ RTSP 연결 실패");
   }
+
+  /**
+   * ✅ 사용자가 버튼 클릭 시 스트리밍 중지
+   * - StreamingVideo 상태 false로 변경
+   * - FastAPI로 중지 요청 전달
+   */
+  @PutMapping("/disconnect/{cctvId}")
+  public ResponseEntity<String> disconnectFromCctv(@PathVariable Long cctvId) {
+    Long userId = getCurrentUserId();  // 현재 로그인된 사용자
+
+    boolean disconnected = streamingVideoService.disconnectAndNotify(userId, cctvId);
+
+    return disconnected
+            ? ResponseEntity.ok("🛑 스트리밍 중지 완료")
+            : ResponseEntity.status(500).body("❌ 스트리밍 중지 실패 (FastAPI 요청 실패)");
+  }
+
 }
 

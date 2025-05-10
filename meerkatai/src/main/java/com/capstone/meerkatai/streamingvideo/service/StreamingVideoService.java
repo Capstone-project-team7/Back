@@ -9,6 +9,7 @@ import com.capstone.meerkatai.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -17,7 +18,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,30 +31,69 @@ public class StreamingVideoService {
   private final CctvRepository cctvRepository;
   private final RestTemplate restTemplate = new RestTemplate();
 
-  public boolean connectAndRegister(Long userId, Long cctvId, String rtspUrl) {
+  public boolean connectAndRegister(Long userId, Long targetCctvId, String rtspUrl) {
     //일단 연결 성공 여부는 true로 둠.
     //boolean connectionSuccessful = testRtspConnection(rtspUrl);
     boolean connectionSuccessful = true;
 
-    User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-    Cctv cctv = cctvRepository.findById(cctvId)
-            .orElseThrow(() -> new RuntimeException("CCTV not found"));
+    try {
+      // 1. 해당 사용자의 모든 활성 스트리밍 조회
+      List<StreamingVideo> activeStreams = streamingVideoRepository.findByUserUserIdAndStreamingVideoStatusTrue(userId);
 
-    StreamingVideo entity = StreamingVideo.builder()
-            .user(user)
-            .cctv(cctv)
-            .streamingVideoStatus(connectionSuccessful)
-            .streamingUrl(rtspUrl)
-            .startTime(LocalDateTime.now())
-            .build();
+      // 2. 다른 CCTV에 대한 스트리밍을 모두 비활성화 및 FastAPI에 중지 요청
+      for (StreamingVideo stream : activeStreams) {
+        Long cctvId = stream.getCctv().getCctvId();
+        if (!cctvId.equals(targetCctvId)) {
+          stream.setStreamingVideoStatus(false);
+          stream.setEndTime(LocalDateTime.now());
+          streamingVideoRepository.save(stream);
 
-    streamingVideoRepository.save(entity);
+          // FastAPI에 중지 요청
+          String fastApiUrl = String.format("http://localhost:8000/api/v1/streaming/stop/%d", cctvId);
+          try {
+            restTemplate.put(fastApiUrl, null);
+          } catch (Exception e) {
+            System.err.println("⚠️ FastAPI 중지 요청 실패 (cctvId=" + cctvId + "): " + e.getMessage());
+          }
+        }
+      }
 
-    // FastAPI로 전송
-    sendToFastAPI(userId, cctvId, rtspUrl);
+      // 3. 연결 시도할 CCTV 스트리밍Video 상태 확인 또는 생성 후 업데이트
+      User user = userRepository.findById(userId)
+              .orElseThrow(() -> new RuntimeException("User not found"));
+      Cctv cctv = cctvRepository.findById(targetCctvId)
+              .orElseThrow(() -> new RuntimeException("CCTV not found"));
 
-    return connectionSuccessful;
+      Optional<StreamingVideo> existingStreamOpt = streamingVideoRepository.findByUserUserIdAndCctvCctvId(userId, targetCctvId);
+
+      StreamingVideo entity;
+      if (existingStreamOpt.isPresent()) {
+        // 이미 존재하는 경우 상태 갱신
+        entity = existingStreamOpt.get();
+        entity.setStreamingVideoStatus(connectionSuccessful);
+        entity.setStreamingUrl(rtspUrl);
+        entity.setStartTime(LocalDateTime.now());
+      } else {
+        // 없으면 새로 생성
+        entity = StreamingVideo.builder()
+                .user(user)
+                .cctv(cctv)
+                .streamingVideoStatus(connectionSuccessful)
+                .streamingUrl(rtspUrl)
+                .startTime(LocalDateTime.now())
+                .build();
+      }
+
+      streamingVideoRepository.save(entity);
+
+      // FastAPI로 전송
+      sendToFastAPI(userId, targetCctvId, rtspUrl);
+
+      return connectionSuccessful;
+    } catch (Exception e) {
+      System.err.println("❌ 연결 처리 중 예외 발생: " + e.getMessage());
+      return false;
+    }
   }
 
   private boolean testRtspConnection(String rtspUrl) {
@@ -97,16 +139,25 @@ public class StreamingVideoService {
               streamingVideoRepository.save(stream);
             });
 
-    // 2. FastAPI에 PUT 요청 보내기
-    String fastApiUrl = String.format("http://localhost:8000/api/v1/streaming/stop/%d", cctvId);
+    String fastApiUrl = "http://localhost:8000/api/v1/streaming/stop";
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    Map<String, Object> body = new HashMap<>();
+    body.put("user_id", userId);
+    body.put("cctv_id", cctvId);
+
+    HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
     try {
-      restTemplate.put(fastApiUrl, null);  // body 없이 PUT 요청 가능
+      restTemplate.exchange(fastApiUrl, HttpMethod.PUT, requestEntity, Void.class);
       return true;
     } catch (Exception e) {
       System.err.println("❌ FastAPI 스트림 중지 요청 실패: " + e.getMessage());
       return false;
     }
   }
+
 
 }

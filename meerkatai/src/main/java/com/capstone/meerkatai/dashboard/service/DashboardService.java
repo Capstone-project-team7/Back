@@ -45,13 +45,13 @@ public class DashboardService {
 
         // 2. anomalyType에 따라 해당 count 증가
         switch (anomalyType.toUpperCase()) {
-            case "전도": dashboard.setType1Count(dashboard.getType1Count() + 1); break;
-            case "파손": dashboard.setType2Count(dashboard.getType2Count() + 1); break;
-            case "방화": dashboard.setType3Count(dashboard.getType3Count() + 1); break;
-            case "흡연": dashboard.setType4Count(dashboard.getType4Count() + 1); break;
-            case "유기": dashboard.setType5Count(dashboard.getType5Count() + 1); break;
-            case "절도": dashboard.setType6Count(dashboard.getType6Count() + 1); break;
-            case "폭행": dashboard.setType7Count(dashboard.getType7Count() + 1); break;
+            case "Fall": dashboard.setType1Count(dashboard.getType1Count() + 1); break;
+            case "Damage": dashboard.setType2Count(dashboard.getType2Count() + 1); break;
+            case "Fire": dashboard.setType3Count(dashboard.getType3Count() + 1); break;
+            case "Smoke": dashboard.setType4Count(dashboard.getType4Count() + 1); break;
+            case "Abandon": dashboard.setType5Count(dashboard.getType5Count() + 1); break;
+            case "Theft": dashboard.setType6Count(dashboard.getType6Count() + 1); break;
+            case "Assault": dashboard.setType7Count(dashboard.getType7Count() + 1); break;
             default: break; // 알 수 없는 유형은 무시
         }
 

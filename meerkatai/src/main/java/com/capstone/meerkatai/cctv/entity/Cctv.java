@@ -58,7 +58,7 @@ public class Cctv {
      * CCTV의 접근 경로입니다.
      * 최대 50자까지 입력 가능하며, NULL 값을 허용하지 않습니다.
      */
-    @Column(name = "cctv_path", nullable = false, length = 50)
+    @Column(name = "cctv_path", nullable = true, length = 50)
     private String cctvPath;
 
     /**
