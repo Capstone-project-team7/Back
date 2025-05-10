@@ -28,7 +28,7 @@ public class GetVideoListResponse {
         private Long video_id;
         private String file_path;
         private String thumbnail_path;
-        private int duration;
+        private Long duration;
         private long file_size;
         private boolean video_status;
         private String created_at;

@@ -1,17 +1,27 @@
 package com.capstone.meerkatai.video.service;
 
+import com.capstone.meerkatai.alarm.dto.AnomalyVideoMetadataRequest;
+import com.capstone.meerkatai.anomalybehavior.entity.AnomalyBehavior;
+import com.capstone.meerkatai.anomalybehavior.repository.AnomalyBehaviorRepository;
+import com.capstone.meerkatai.streamingvideo.entity.StreamingVideo;
+import com.capstone.meerkatai.streamingvideo.repository.StreamingVideoRepository;
+import com.capstone.meerkatai.user.entity.User;
+import com.capstone.meerkatai.user.repository.UserRepository;
 import com.capstone.meerkatai.video.dto.GetVideoListResponse;
 import com.capstone.meerkatai.video.dto.VideoDetailsResponse;
 import com.capstone.meerkatai.video.dto.VideoListRequest;
 import com.capstone.meerkatai.video.entity.Video;
 import com.capstone.meerkatai.video.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -20,12 +30,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VideoService {
 
     private final VideoRepository videoRepository;
-
+    private final UserRepository userRepository;
+    private final StreamingVideoRepository streamingVideoRepository;
+    private final AnomalyBehaviorRepository anomalyBehaviorRepository;
 
     //    필터 값 없는 경우(홈페이지 이동 OR 필터 값 없이 페이지 이동)
 //    {
@@ -60,7 +73,7 @@ public class VideoService {
                 video.getVideoStatus(),
                 video.getAnomalyBehavior().getAnomalyTime().toString(), // 수정된 부분
                 video.getStreamingVideo().getStreamingVideoId(),
-                video.getAnomalyBehavior().getAnomalyBehaviorType().name(), // 이 부분도 anomalyBehavior를 통해 접근해야 함
+                video.getAnomalyBehavior().getAnomalyBehaviorType(), // 이 부분도 anomalyBehavior를 통해 접근해야 함
                 video.getStreamingVideo().getCctv().getCctvName()
             ))
             .collect(Collectors.toList());
@@ -95,7 +108,7 @@ public class VideoService {
         // 이상행동 유형 필터 적용
         if (req.getAnomaly_behavior_type() != null && !req.getAnomaly_behavior_type().isBlank()) {
             stream = stream.filter(video ->
-                video.getAnomalyBehavior().getAnomalyBehaviorType().name().equalsIgnoreCase(req.getAnomaly_behavior_type())
+                video.getAnomalyBehavior().getAnomalyBehaviorType().equalsIgnoreCase(req.getAnomaly_behavior_type())
             );
         }
 
@@ -120,7 +133,7 @@ public class VideoService {
                 video.getVideoStatus(),
                 video.getAnomalyBehavior().getAnomalyTime().toString(),
                 video.getStreamingVideo().getStreamingVideoId(),
-                video.getAnomalyBehavior().getAnomalyBehaviorType().name(),
+                video.getAnomalyBehavior().getAnomalyBehaviorType(),
                 video.getStreamingVideo().getCctv().getCctvName()
             ))
             .toList();
@@ -191,7 +204,60 @@ public class VideoService {
             video.getStreamingVideo().getCctv().getCctvId(),
             video.getStreamingVideo().getCctv().getCctvName(),
             video.getUser().getUserId(),
-            video.getAnomalyBehavior().getAnomalyBehaviorType().name()
+            video.getAnomalyBehavior().getAnomalyBehaviorType()
         );
     }
+
+
+    public Video saveVideo(AnomalyVideoMetadataRequest request, AnomalyBehavior anomalyBehavior) {
+        // 1. 연관 엔티티 조회
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("사용자 없음"));
+
+        StreamingVideo streamingVideo = streamingVideoRepository.findById(request.getCctvId())
+                .orElseThrow(() -> new RuntimeException("스트리밍 비디오 없음"));
+
+        // 2. 영상 정보 분석
+        long fileSize = getRemoteFileSize(request.getVideoUrl());
+        double duration = 0;
+        boolean playable = false;
+
+        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(new URL(request.getVideoUrl()))) {
+            grabber.start();
+            duration = grabber.getLengthInTime() / 1_000_000.0; // 초 단위
+            playable = grabber.getLengthInFrames() > 0;
+            grabber.stop();
+        } catch (Exception e) {
+            System.err.println("⚠️ 영상 분석 실패: " + e.getMessage());
+        }
+
+        // 3. 비디오 엔티티 저장
+        Video video = Video.builder()
+                .filePath(request.getVideoUrl())
+                .thumbnailPath(request.getThumbnailUrl())
+                .duration((long)duration)
+                .fileSize(fileSize)
+                .videoStatus(playable)
+                .streamingVideo(streamingVideo)
+                .anomalyBehavior(anomalyBehavior)
+                .user(user)
+                .build();
+
+        Video saved = videoRepository.save(video);
+        log.info("✅ 비디오 저장 완료: video_id={}", saved.getVideoId());
+        return saved;
+    }
+
+    private long getRemoteFileSize(String url) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setRequestMethod("HEAD");
+            conn.getInputStream();
+            return conn.getContentLengthLong(); // ✅ 파일 크기 (byte)
+        } catch (Exception e) {
+            System.err.println("파일 크기 확인 실패: " + e.getMessage());
+            return 0;
+        }
+    }
+
 }

@@ -28,6 +28,8 @@ public class Dashboard {
     private Integer type5Count;
     @Column(nullable = false)
     private Integer type6Count;
+    @Column(nullable = false)
+    private Integer type7Count;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

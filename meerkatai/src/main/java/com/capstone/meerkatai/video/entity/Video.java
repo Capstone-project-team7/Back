@@ -10,6 +10,8 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Video {
 
     @Id
@@ -23,10 +25,10 @@ public class Video {
     private String thumbnailPath;
 
     @Column(nullable = false)
-    private Integer duration;
+    private Long duration;
 
     @Column(nullable = false)
-    private Integer fileSize;
+    private Long fileSize;
 
     @Column(nullable = false)
     private Boolean videoStatus;

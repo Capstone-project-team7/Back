@@ -10,14 +10,15 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter @Setter @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class AnomalyBehavior {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long anomalyId;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AnomalyBehaviorType anomalyBehaviorType;
+    private String anomalyBehaviorType;
 
     @Column(nullable = false)
     private LocalDateTime anomalyTime;

@@ -3,9 +3,7 @@ package com.capstone.meerkatai.streamingvideo.entity;
 import com.capstone.meerkatai.cctv.entity.Cctv;
 import com.capstone.meerkatai.user.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +16,8 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Getter @Setter @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class StreamingVideo {
     /**
      * 스트리밍 비디오의 고유 식별자입니다.
@@ -57,4 +57,6 @@ public class StreamingVideo {
      * 스트리밍 비디오에 접근할 수 있는 URL입니다.
      */
     private String streamingUrl;
+
+    private Boolean streamingVideoStatus;
 }

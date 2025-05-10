@@ -12,10 +12,10 @@ public class StorageSpace {
     private Long storageId;
 
     @Column(nullable = false)
-    private Integer totalSpace;
+    private Long totalSpace;
 
     @Column(nullable = false)
-    private Integer usedSpace;
+    private Long usedSpace;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

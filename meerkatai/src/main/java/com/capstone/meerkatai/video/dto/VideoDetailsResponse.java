@@ -9,8 +9,8 @@ public class VideoDetailsResponse {
     private Long video_id;
     private String file_path;
     private String thumbnail_path;
-    private Integer duration;
-    private Integer file_size;
+    private Long duration;
+    private Long file_size;
     private Boolean video_status;
     private String created_at;
     private Long streaming_video_id;
