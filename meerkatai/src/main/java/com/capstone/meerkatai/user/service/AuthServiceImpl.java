@@ -1,11 +1,14 @@
 package com.capstone.meerkatai.user.service;
 
 import com.capstone.meerkatai.global.jwt.JwtUtil;
+import com.capstone.meerkatai.storagespace.entity.StorageSpace;
+import com.capstone.meerkatai.storagespace.repository.StorageSpaceRepository;
 import com.capstone.meerkatai.user.dto.*;
 import com.capstone.meerkatai.user.entity.User;
 import com.capstone.meerkatai.user.entity.Role;
 import com.capstone.meerkatai.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,12 +26,19 @@ import java.time.ZonedDateTime;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
   private final JwtUtil jwtUtil;
+  private final StorageSpaceRepository storageSpaceRepository;
+
+  /**
+   * 기본 저장 공간 크기 (10GB)
+   */
+  private static final Long DEFAULT_STORAGE_SPACE = 10L * 1024 * 1024 * 1024; // 10GB in bytes
 
   /**
    * 회원가입을 처리합니다.
@@ -55,12 +65,22 @@ public class AuthServiceImpl implements AuthService {
         .role(Role.USER)
         .build();
 
-    userRepository.save(user);
+    // 사용자 저장
+    User savedUser = userRepository.save(user);
+    
+    // 저장 공간 생성 및 할당 (기본 10GB)
+    StorageSpace storageSpace = new StorageSpace();
+    storageSpace.setUser(savedUser);
+    storageSpace.setTotalSpace(DEFAULT_STORAGE_SPACE);
+    storageSpace.setUsedSpace(0L);
+    storageSpaceRepository.save(storageSpace);
+    
+    log.info("사용자 {} 생성 완료. 기본 저장 공간 {}GB 할당됨.", savedUser.getEmail(), DEFAULT_STORAGE_SPACE / (1024 * 1024 * 1024));
 
     return SignUpResponse.builder()
-        .userId(user.getUserId())
-        .userEmail(user.getEmail())
-        .userName(user.getName())
+        .userId(savedUser.getUserId())
+        .userEmail(savedUser.getEmail())
+        .userName(savedUser.getName())
         .build();
   }
 
@@ -88,12 +108,27 @@ public class AuthServiceImpl implements AuthService {
 
       // 로그인 시간 업데이트
       user.updateLastLoginAt();
+      
+      // 저장 공간 정보 조회
+      StorageSpace storageSpace = storageSpaceRepository.findByUserUserId(user.getUserId())
+          .orElse(null);
+      
+      Long totalSpace = DEFAULT_STORAGE_SPACE; // 기본값 10GB
+      Long usedSpace = 0L;
+      
+      if (storageSpace != null) {
+          totalSpace = storageSpace.getTotalSpace() != null ? storageSpace.getTotalSpace() : DEFAULT_STORAGE_SPACE;
+          usedSpace = storageSpace.getUsedSpace() != null ? storageSpace.getUsedSpace() : 0L;
+      }
 
       return SignInResponse.builder()
           .token(token)
           .expiresIn(86400)
           .userId(user.getUserId())
+          .userName(user.getName())
           .firstLogin(isFirstLogin)
+          .totalSpace(totalSpace)
+          .usedSpace(usedSpace)
           .build();
     } catch (BadCredentialsException e) {
       throw new BadCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
