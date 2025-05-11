@@ -19,8 +19,8 @@ public class ResetPasswordRequest {
    * 이 이메일을 통해 사용자를 식별
    * </p>
    */
-  @NotBlank
-  @Email
+  @NotBlank(message = "이메일은 필수 입력 항목입니다")
+  @Email(message = "올바른 형식의 이메일 주소여야 합니다")
   @JsonProperty("user_email")
   private String userEmail;
 
@@ -31,7 +31,7 @@ public class ResetPasswordRequest {
    * 비밀번호 변경 전 본인 확인을 위해 사용
    * </p>
    */
-  @NotBlank
+  @NotBlank(message = "현재 비밀번호는 필수 입력 항목입니다")
   @JsonProperty("user_password")
   private String userPassword;
 
@@ -42,7 +42,7 @@ public class ResetPasswordRequest {
    * 서비스에서 암호화되어 저장
    * </p>
    */
-  @NotBlank
+  @NotBlank(message = "새 비밀번호는 필수 입력 항목입니다")
   @JsonProperty("new_password")
   private String newPassword;
 }

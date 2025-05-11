@@ -147,11 +147,4 @@ public class AuthController {
     authService.withdraw(request);
     return ResponseEntity.ok(new ApiResponse<>("success", "회원 탈퇴가 완료되었습니다."));
   }
-
-  //컨트롤러에서 발생하는 예외를 처리
-
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<ApiResponse<String>> handleException(Exception e) {
-    return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage()));
-  }
 }

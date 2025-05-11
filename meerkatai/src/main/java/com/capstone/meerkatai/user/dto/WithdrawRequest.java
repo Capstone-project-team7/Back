@@ -19,7 +19,7 @@ public class WithdrawRequest {
    * 이 ID를 통해 탈퇴 처리할 사용자를 식별합니다.
    * </p>
    */
-  @NotNull
+  @NotNull(message = "사용자 ID는 필수 입력 항목입니다")
   @JsonProperty("user_id")
   private Long userId;
 
@@ -30,7 +30,7 @@ public class WithdrawRequest {
    * 본인 확인을 위해 비밀번호를 검증합니다.
    * </p>
    */
-  @NotBlank
+  @NotBlank(message = "비밀번호는 필수 입력 항목입니다")
   @JsonProperty("user_password")
   private String userPassword;
 }
