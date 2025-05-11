@@ -147,9 +147,21 @@ public class AuthServiceImpl implements AuthService {
     User user = userRepository.findByEmail(request.getUserEmail())
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
 
+    // 기존 비밀번호 확인
+    if (!passwordEncoder.matches(request.getUserPassword(), user.getPassword())) {
+      throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
+    }
+    
+    // 새 비밀번호가 현재 비밀번호와 동일한지 확인
+    if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+      throw new IllegalArgumentException("새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+    }
+
     // 새 비밀번호 암호화 및 저장
     String encodedPassword = passwordEncoder.encode(request.getNewPassword());
     user.setPassword(encodedPassword);
+    
+    log.info("사용자 {} 비밀번호 변경 완료", user.getEmail());
   }
 
   /**

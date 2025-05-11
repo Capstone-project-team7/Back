@@ -25,6 +25,17 @@ public class ResetPasswordRequest {
   private String userEmail;
 
   /**
+   * 현재 비밀번호
+   * <p>
+   * 빈 값이 허용되지 않는 필수 입력 항목
+   * 비밀번호 변경 전 본인 확인을 위해 사용
+   * </p>
+   */
+  @NotBlank
+  @JsonProperty("user_password")
+  private String userPassword;
+
+  /**
    * 새로 설정할 비밀번호
    * <p>
    * 빈 값이 허용되지 않는 필수 입력 항목

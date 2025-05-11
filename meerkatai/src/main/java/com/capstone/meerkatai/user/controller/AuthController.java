@@ -65,6 +65,7 @@ public class AuthController {
    * <pre>
    * {
    *   "user_email": "user@example.com",
+   *   "user_password": "currentpassword123",
    *   "new_password": "newpassword123"
    * }
    * </pre>
