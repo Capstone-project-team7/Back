@@ -57,4 +57,16 @@ public class UserService {
     @Transactional
     public void deleteById(Long userId) { userRepository.deleteById(userId);
     }
+
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId).orElse(null);
+    }
+
+    public boolean updateNotificationStatus(Long userId, boolean newStatus) {
+        return userRepository.findById(userId).map(user -> {
+            user.setNotification(newStatus);
+            userRepository.save(user);
+            return true;
+        }).orElse(false);
+    }
 }
