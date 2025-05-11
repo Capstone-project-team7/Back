@@ -42,15 +42,4 @@ public class UpdateUserRequest {
    */
   @JsonProperty("user_password")
   private String userPassword;
-
-  /**
-   * 변경할 사용자의 알림 설정 상태입니다.
-   * <p>
-   * 선택적 입력 항목입니다.
-   * null인 경우 알림 설정이 변경되지 않습니다.
-   * true: 알림 활성화, false: 알림 비활성화
-   * </p>
-   */
-  @JsonProperty("notify_status")
-  private Boolean notifyStatus;
 }

@@ -121,8 +121,7 @@ public class AuthController {
    * {
    *   "user_id": 123,
    *   "user_name": "김철수",
-   *   "user_password": "newpassword123",
-   *   "notify_status": false
+   *   "user_password": "newpassword123"
    * }
    * </pre>
    */

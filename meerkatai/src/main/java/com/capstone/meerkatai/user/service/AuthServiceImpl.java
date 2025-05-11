@@ -208,14 +208,10 @@ public class AuthServiceImpl implements AuthService {
     if (request.getUserPassword() != null) {
       user.setPassword(passwordEncoder.encode(request.getUserPassword()));
     }
-    if (request.getNotifyStatus() != null) {
-      user.setNotification(request.getNotifyStatus());
-    }
 
     return UpdateUserResponse.builder()
         .userId(user.getUserId())
         .userName(user.getName())
-        .notifyStatus(user.isNotification())
         .updatedAt(ZonedDateTime.now())
         .build();
   }
