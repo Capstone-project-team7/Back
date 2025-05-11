@@ -126,6 +126,7 @@ public class AuthServiceImpl implements AuthService {
           .expiresIn(86400)
           .userId(user.getUserId())
           .userName(user.getName())
+          .notifyStatus(user.isNotification())
           .firstLogin(isFirstLogin)
           .totalSpace(totalSpace)
           .usedSpace(usedSpace)
