@@ -131,14 +131,6 @@ public class StreamingVideoService {
   }
 
   public boolean disconnectAndNotify(Long userId, Long cctvId) {
-    // 1. 스트리밍 DB 상태 종료 처리 (선택)
-    streamingVideoRepository.findByUserUserIdAndCctvCctvId(userId, cctvId)
-            .ifPresent(stream -> {
-              stream.setStreamingVideoStatus(false);
-              stream.setEndTime(LocalDateTime.now());
-              streamingVideoRepository.save(stream);
-            });
-
     String fastApiUrl = "http://localhost:8000/api/v1/streaming/stop";
 
     HttpHeaders headers = new HttpHeaders();
@@ -151,13 +143,22 @@ public class StreamingVideoService {
     HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
     try {
+      // ✅ FastAPI에 스트리밍 중지 요청 먼저
       restTemplate.exchange(fastApiUrl, HttpMethod.PUT, requestEntity, Void.class);
+
+      // ✅ 성공한 경우에만 DB 상태 변경
+      streamingVideoRepository.findByUserUserIdAndCctvCctvId(userId, cctvId)
+              .ifPresent(stream -> {
+                stream.setStreamingVideoStatus(false);
+                stream.setEndTime(LocalDateTime.now());
+                streamingVideoRepository.save(stream);
+              });
+
       return true;
+
     } catch (Exception e) {
       System.err.println("❌ FastAPI 스트림 중지 요청 실패: " + e.getMessage());
       return false;
     }
   }
-
-
 }
