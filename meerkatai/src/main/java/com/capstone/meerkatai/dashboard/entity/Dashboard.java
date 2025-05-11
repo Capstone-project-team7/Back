@@ -4,6 +4,7 @@ import com.capstone.meerkatai.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,7 +15,7 @@ public class Dashboard {
     private Long dataId;
 
     @Column(nullable = false)
-    private LocalDateTime time;
+    private LocalDate time;
 
     @Column(nullable = false)
     private Integer type1Count;

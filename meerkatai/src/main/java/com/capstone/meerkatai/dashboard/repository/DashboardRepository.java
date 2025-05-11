@@ -11,6 +11,6 @@ import java.util.Optional;
 public interface DashboardRepository extends JpaRepository<Dashboard, Long> {
     List<Dashboard> findByUserUserId(Long userId);
 
-    Optional<Dashboard> findByUserAndTime(User user, LocalDate date);
-
+    Optional<Dashboard> findByUserAndTime(User user, LocalDate time);
+    List<Dashboard> findByUserAndTimeBetween(User user, LocalDate start, LocalDate end);
 }

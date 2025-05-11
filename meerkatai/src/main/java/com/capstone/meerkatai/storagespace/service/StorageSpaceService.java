@@ -3,13 +3,13 @@ package com.capstone.meerkatai.storagespace.service;
 import com.capstone.meerkatai.alarm.dto.AnomalyVideoMetadataRequest;
 import com.capstone.meerkatai.storagespace.entity.StorageSpace;
 import com.capstone.meerkatai.storagespace.repository.StorageSpaceRepository;
+import com.capstone.meerkatai.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -47,5 +47,23 @@ public class StorageSpaceService {
             log.warn("⚠️ 파일 사이즈 확인 실패: {}", e.getMessage());
             return 0;
         }
+    }
+
+    //로그인시 생성되는 저장공간 테이블 생성 메소드
+    public void saveStorageSpace(User user) {
+
+        Long totalSpace = 100L;
+        Long usedSpace = 0L;
+
+        StorageSpace storageSpace = StorageSpace.builder()
+                .totalSpace(totalSpace)
+                .usedSpace(usedSpace)
+                .user(user)
+                .build();
+
+        // 4. 저장
+        storageSpaceRepository.save(storageSpace);
+
+        log.info("✅ 이상행동 저장 완료: anomaly_id={}", storageSpace.getStorageId());
     }
 }
