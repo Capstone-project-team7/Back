@@ -66,4 +66,6 @@ public class CctvResponse {
    */
   @JsonProperty("updated_at")
   private LocalDateTime updatedAt;
+
+  private Boolean is_active;
 }
