@@ -31,22 +31,51 @@ public class DirectS3Test {
         String secretKey = System.getenv("AWS_SECRET_ACCESS_KEY");
         
         System.out.println("===== AWS 자격 증명 진단 =====");
-        System.out.println("ACCESS_KEY가 설정되었나요? " + (accessKey != null && !accessKey.isEmpty()));
-        System.out.println("SECRET_KEY가 설정되었나요? " + (secretKey != null && !secretKey.isEmpty()));
+        System.out.println("환경 변수 ACCESS_KEY가 설정되었나요? " + (accessKey != null && !accessKey.isEmpty()));
+        System.out.println("환경 변수 SECRET_KEY가 설정되었나요? " + (secretKey != null && !secretKey.isEmpty()));
         
-        // 자격 증명 없으면 테스트 무시
-        if (accessKey == null || accessKey.isEmpty() || secretKey == null || secretKey.isEmpty()) {
+        // 로컬 환경에서 AWS 자격 증명 파일 확인
+        String userHome = System.getProperty("user.home");
+        String awsCredentialsPath = userHome + "/.aws/credentials";
+        boolean awsCredentialsExists = new java.io.File(awsCredentialsPath).exists();
+        System.out.println("AWS 자격 증명 파일이 존재하나요? " + awsCredentialsExists);
+        
+        // AWS 자격 증명 파일이 있으면 테스트 진행 가능
+        boolean canProceed = (accessKey != null && !accessKey.isEmpty() && 
+                             secretKey != null && !secretKey.isEmpty()) || 
+                             awsCredentialsExists;
+        
+        // 테스트를 위해 하드코딩된 키 사용 (실제 운영 환경에서는 사용하지 말 것!)
+        // 아래 주석을 해제하여 테스트하고, 테스트 후에는 반드시 다시 주석 처리할 것
+        // accessKey = "YOUR_ACCESS_KEY_HERE";
+        // secretKey = "YOUR_SECRET_KEY_HERE";
+        // canProceed = true;
+        
+        if (!canProceed) {
             System.out.println("AWS 자격 증명이 설정되지 않았습니다. 테스트를 건너뜁니다.");
+            System.out.println("환경 변수 또는 ~/.aws/credentials 파일에 자격 증명을 설정하세요.");
             return;
         }
         
         try {
             // 기본적인 S3 클라이언트 생성
-            BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
-            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                    .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                    .withRegion(AWS_REGION)
-                    .build();
+            AmazonS3 s3Client;
+            
+            if (accessKey != null && !accessKey.isEmpty() && secretKey != null && !secretKey.isEmpty()) {
+                // 환경 변수 자격 증명 사용
+                BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
+                s3Client = AmazonS3ClientBuilder.standard()
+                        .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                        .withRegion(AWS_REGION)
+                        .build();
+                System.out.println("환경 변수에서 자격 증명을 가져왔습니다.");
+            } else {
+                // 기본 자격 증명 공급자 체인 사용 (AWS 자격 증명 파일 등)
+                s3Client = AmazonS3ClientBuilder.standard()
+                        .withRegion(AWS_REGION)
+                        .build();
+                System.out.println("AWS 자격 증명 파일에서 자격 증명을 가져왔습니다.");
+            }
             
             // 1. 버킷 목록 확인
             List<Bucket> buckets = s3Client.listBuckets();
