@@ -5,6 +5,7 @@ import com.capstone.meerkatai.cctv.dto.CctvUpdateRequest;
 import com.capstone.meerkatai.cctv.entity.Cctv;
 import com.capstone.meerkatai.cctv.repository.CctvRepository;
 import com.capstone.meerkatai.common.exception.ResourceNotFoundException;
+import com.capstone.meerkatai.streamingvideo.service.StreamingVideoService;
 import com.capstone.meerkatai.user.entity.User;
 import com.capstone.meerkatai.user.repository.UserRepository;
 import com.capstone.meerkatai.streamingvideo.entity.StreamingVideo;
@@ -39,6 +40,7 @@ public class CctvService {
 
     private final CctvRepository cctvRepository;
     private final UserRepository userRepository;
+    private final StreamingVideoService streamingVideoService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -104,7 +106,13 @@ public class CctvService {
             .user(user)
             .build();
 
-        return cctvRepository.save(cctv);
+        // ✅ CCTV 먼저 저장
+        Cctv savedCctv = cctvRepository.save(cctv);
+
+        // ✅ StreamingVideo 테이블에 비활성화 상태로 추가
+        streamingVideoService.createStreamingVideo(user.getUserId(), savedCctv.getCctvId());
+
+        return savedCctv;
     }
 
     /**

@@ -62,6 +62,7 @@ public class UserService {
         return userRepository.findById(userId).orElse(null);
     }
 
+    @Transactional
     public boolean updateNotificationStatus(Long userId, boolean newStatus) {
         return userRepository.findById(userId).map(user -> {
             user.setNotification(newStatus);

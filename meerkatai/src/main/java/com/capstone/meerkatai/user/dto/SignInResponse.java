@@ -54,6 +54,12 @@ public class SignInResponse {
   private Long usedSpace;
 
   /**
+   * 사용자의 알림 발송 여부 입니다.
+   */
+  @JsonProperty("notify_status")
+  private Boolean notifyStatus;
+
+  /**
    * 응답 예시:
    * <pre>
    * {

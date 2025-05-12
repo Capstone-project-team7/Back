@@ -161,4 +161,32 @@ public class StreamingVideoService {
       return false;
     }
   }
+
+  public StreamingVideo createStreamingVideo(Long userId, Long cctvId) {
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+    Cctv cctv = cctvRepository.findById(cctvId)
+            .orElseThrow(() -> new RuntimeException("CCTV를 찾을 수 없습니다."));
+
+    // ✅ RTSP URL 구성
+    String rtspUrl = String.format("rtsp://%s:%s@%s:%d/%s",
+            cctv.getCctvAdmin(),
+            cctv.getCctvPassword(),
+            cctv.getIpAddress(),
+            1945,
+            cctv.getCctvPath()
+    );
+
+    // ✅ 스트리밍 비디오 생성 (startTime 없음, 상태 false)
+    StreamingVideo streamingVideo = StreamingVideo.builder()
+            .user(user)
+            .cctv(cctv)
+            .streamingUrl(rtspUrl)
+            .streamingVideoStatus(false)
+            .build();
+
+    return streamingVideoRepository.save(streamingVideo);
+  }
+
 }

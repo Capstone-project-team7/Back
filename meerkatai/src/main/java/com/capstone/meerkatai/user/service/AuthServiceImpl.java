@@ -106,6 +106,15 @@ public class AuthServiceImpl implements AuthService {
       // JWT 토큰 생성
       String token = jwtUtil.generateToken(user.getEmail());
 
+      Boolean notifyStatus;
+      if (isFirstLogin) {
+        user.setNotification(true);         // 알림 활성화
+        userRepository.save(user);          // 저장
+        notifyStatus = true;
+      } else {
+        notifyStatus = user.isNotification();
+      }
+
       // 로그인 시간 업데이트
       user.updateLastLoginAt();
       
@@ -129,6 +138,7 @@ public class AuthServiceImpl implements AuthService {
           .firstLogin(isFirstLogin)
           .totalSpace(totalSpace)
           .usedSpace(usedSpace)
+          .notifyStatus(notifyStatus)
           .build();
     } catch (BadCredentialsException e) {
       throw new BadCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");

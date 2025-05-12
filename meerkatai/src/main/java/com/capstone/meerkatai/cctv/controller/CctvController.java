@@ -8,6 +8,8 @@ import com.capstone.meerkatai.cctv.entity.Cctv;
 import com.capstone.meerkatai.cctv.service.CctvService;
 import com.capstone.meerkatai.common.dto.ApiResponse;
 import com.capstone.meerkatai.common.exception.ResourceNotFoundException;
+import com.capstone.meerkatai.streamingvideo.entity.StreamingVideo;
+import com.capstone.meerkatai.streamingvideo.repository.StreamingVideoRepository;
 import com.capstone.meerkatai.user.entity.User;
 import com.capstone.meerkatai.user.repository.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -35,6 +37,16 @@ public class CctvController {
 
     private final CctvService cctvService;
     private final UserRepository userRepository;
+    private final StreamingVideoRepository streamingVideoRepository;
+
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."))
+                .getUserId();
+    }
 
     /**
      * 현재 인증된 사용자의 CCTV 목록을 조회합니다.
@@ -44,25 +56,39 @@ public class CctvController {
      */
     @GetMapping("/list")
     public ApiResponse<Map<String, List<CctvResponse>>> getCctvList() {
-        // 현재 인증된 사용자 정보 가져오기
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName(); // JWT에서 추출한 사용자 이메일
+        String email = authentication.getName();
 
-        // 이메일로 사용자 ID 조회
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
-        // 현재 사용자의 CCTV만 조회
         List<Cctv> cctvs = cctvService.findByUserId(user.getUserId());
+
         List<CctvResponse> responses = cctvs.stream()
-            .map(this::convertToCctvResponse)
-            .collect(Collectors.toList());
+                .map(cctv -> {
+                    // ✅ 해당 CCTV에 대한 스트리밍 상태 확인
+                    Boolean isActive = streamingVideoRepository
+                            .findByUserUserIdAndCctvCctvId(user.getUserId(), cctv.getCctvId())
+                            .map(StreamingVideo::getStreamingVideoStatus)
+                            .orElse(false); // 없으면 false
+
+                    return CctvResponse.builder()
+                            .cctvId(cctv.getCctvId())
+                            .cctvName(cctv.getCctvName())
+                            .ipAddress(cctv.getIpAddress())
+                            .createdAt(cctv.getCreatedAt())
+                            .updatedAt(cctv.getUpdatedAt())
+                            .is_active(isActive)
+                            .build();
+                })
+                .collect(Collectors.toList());
 
         Map<String, List<CctvResponse>> data = new HashMap<>();
         data.put("cctvs", responses);
 
         return ApiResponse.success(data);
     }
+
 
     /**
      * 특정 CCTV의 상세 정보를 조회합니다.
