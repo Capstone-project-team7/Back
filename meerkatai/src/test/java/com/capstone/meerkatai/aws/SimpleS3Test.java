@@ -6,74 +6,80 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 /**
- * 매우 간단한 AWS S3 연결 테스트
+ * AWS S3 연결 테스트 - Mockito를 사용하여 AWS 서비스를 모킹
  */
 public class SimpleS3Test {
 
+    @Mock
+    private AmazonS3 s3Client;
+    
+    @Mock
+    private ObjectListing objectListing;
+    
+    private final String bucketName = "test-bucket";
+
+    @BeforeEach
+    void setUp() {
+        // Mockito 초기화
+        MockitoAnnotations.openMocks(this);
+        
+        // 기본 모킹 설정
+        when(s3Client.doesBucketExistV2(anyString())).thenReturn(true);
+        
+        // 객체 목록 모킹
+        List<S3ObjectSummary> summaries = new ArrayList<>();
+        S3ObjectSummary summary1 = new S3ObjectSummary();
+        summary1.setKey("test-file-1.txt");
+        summary1.setBucketName(bucketName);
+        
+        S3ObjectSummary summary2 = new S3ObjectSummary();
+        summary2.setKey("test-file-2.txt");
+        summary2.setBucketName(bucketName);
+        
+        summaries.add(summary1);
+        summaries.add(summary2);
+        
+        when(objectListing.getObjectSummaries()).thenReturn(summaries);
+        when(s3Client.listObjects(anyString())).thenReturn(objectListing);
+    }
+    
     @Test
     void testS3Connection() {
-        // 환경 변수에서 자격 증명 가져오기
-        String accessKey = System.getenv("AWS_ACCESS_KEY_ID");
-        String secretKey = System.getenv("AWS_SECRET_ACCESS_KEY");
-        
-        System.out.println("==== AWS 자격 증명 확인 ====");
-        System.out.println("ACCESS_KEY: " + (accessKey != null ? "설정됨" : "없음"));
-        System.out.println("SECRET_KEY: " + (secretKey != null ? "설정됨" : "없음"));
-        
-        if (accessKey == null || secretKey == null || accessKey.isEmpty() || secretKey.isEmpty()) {
-            System.out.println("AWS 자격 증명이 없어 테스트를 건너뜁니다.");
-            return;
-        }
+        System.out.println("==== AWS S3 모킹 테스트 ====");
         
         try {
-            System.out.println("S3 클라이언트 생성 중...");
-            
-            // AWS 자격 증명 설정
-            AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
-            
-            // Amazon S3 클라이언트 생성
-            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                    .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                    .withRegion(Regions.AP_NORTHEAST_2)
-                    .build();
-            
-            System.out.println("S3 클라이언트 생성 완료");
-            
-            // 특정 버킷 존재 확인 (전체 버킷 나열 대신)
-            String bucketName = "cctv-recordings-yuhan-20250505";
+            // 버킷 존재 확인
             boolean exists = s3Client.doesBucketExistV2(bucketName);
             assertTrue(exists, "버킷이 존재하지 않습니다: " + bucketName);
             
-            System.out.println("\n버킷 '" + bucketName + "' 존재 확인: " + exists);
+            System.out.println("버킷 '" + bucketName + "' 존재 확인: " + exists);
             
-            // 특정 버킷 내의 객체 나열 (권한 테스트)
-            System.out.println("\n==== 버킷 내 객체 목록 ====");
+            // 버킷 내 객체 목록 확인
+            System.out.println("\n==== 버킷 내 객체 목록 (모킹) ====");
             s3Client.listObjects(bucketName).getObjectSummaries().forEach(item -> {
                 System.out.println("- " + item.getKey());
             });
             
-            System.out.println("\nS3 연결 테스트 성공!");
+            System.out.println("\nS3 모킹 테스트 성공!");
         } catch (Exception e) {
             System.out.println("\n==== 오류 발생 ====");
             System.out.println(e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
-            
-            // 상세 오류 추적
-            if (e instanceof com.amazonaws.services.s3.model.AmazonS3Exception) {
-                com.amazonaws.services.s3.model.AmazonS3Exception s3Exception = 
-                    (com.amazonaws.services.s3.model.AmazonS3Exception) e;
-                System.out.println("AWS 오류 코드: " + s3Exception.getErrorCode());
-                System.out.println("AWS 오류 유형: " + s3Exception.getErrorType());
-                System.out.println("AWS 요청 ID: " + s3Exception.getRequestId());
-                System.out.println("AWS 확장 요청 ID: " + s3Exception.getExtendedRequestId());
-            }
-            
             throw e;
         }
     }

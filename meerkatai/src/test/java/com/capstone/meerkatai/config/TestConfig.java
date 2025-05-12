@@ -1,40 +1,21 @@
 package com.capstone.meerkatai.config;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.capstone.meerkatai.global.service.S3Service;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
- * 테스트 환경에서 사용할 통합 Mock 설정 클래스
+ * 통합 테스트를 제외한 단위 테스트 환경에서 사용할 Mock 설정 클래스
  */
 @TestConfiguration
 public class TestConfig {
-
-    /**
-     * 테스트용 AmazonS3 Mock 객체
-     */
-    @Bean
-    @Primary
-    public AmazonS3 amazonS3() {
-        return Mockito.mock(AmazonS3.class);
-    }
-
-    /**
-     * 테스트용 AmazonS3Client Mock 객체 (Spring Cloud AWS 호환용)
-     */
-    @Bean
-    @Primary
-    public AmazonS3Client amazonS3Client() {
-        return Mockito.mock(AmazonS3Client.class);
-    }
     
     /**
      * 테스트용 JavaMailSender Mock 객체
@@ -46,10 +27,13 @@ public class TestConfig {
     }
 
     /**
-     * 테스트용 S3Service Mock 객체
+     * 테스트용 S3Service Mock 객체 (통합 테스트 제외)
+     * 단위 테스트에서만 사용되는 Mock 객체이며, 
+     * AWS S3 통합 테스트에서는 실제 S3Service 빈을 사용합니다.
      */
     @Bean
     @Primary
+    @Profile("!test") // test 프로파일이 아닐 때만 활성화
     public S3Service s3Service() throws MalformedURLException {
         S3Service mockS3Service = Mockito.mock(S3Service.class);
         

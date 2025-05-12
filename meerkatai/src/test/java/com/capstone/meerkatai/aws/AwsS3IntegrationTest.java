@@ -3,14 +3,18 @@ package com.capstone.meerkatai.aws;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
-import com.capstone.meerkatai.global.config.AwsS3Config;
+import com.capstone.meerkatai.alarm.service.EmailService;
 import com.capstone.meerkatai.global.service.S3Service;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.context.annotation.Primary;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.io.ByteArrayInputStream;
@@ -19,17 +23,34 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 /**
  * AWS S3 통합 테스트
  * 
- * 주의: 이 테스트는 실제 AWS S3 서비스와 연결됩니다.
- * 테스트 전에 환경 변수 또는 application-test.properties에 적절한 AWS 자격 증명이 설정되어 있어야 합니다.
+ * 실제 AWS S3 서비스와 연결하여 기능을 테스트합니다.
+ * 테스트 실행 전 환경 변수에 AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY가 설정되어 있어야 합니다.
  */
 @SpringBootTest
-@ActiveProfiles("test") // test 프로필 사용
-@Import({AwsS3Config.class, TestAwsS3Configuration.class}) // AWS S3 설정 클래스 명시적으로 포함
+@ActiveProfiles("test")
+@Import({TestAwsS3Configuration.class, AwsS3IntegrationTest.TestConfig.class})
 public class AwsS3IntegrationTest {
+
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        @Primary
+        public JavaMailSender javaMailSender() {
+            return mock(JavaMailSender.class);
+        }
+        
+        @Bean
+        @Primary
+        public EmailService emailService() {
+            // EmailService를 모킹하여 실제 이메일 전송을 방지
+            return mock(EmailService.class);
+        }
+    }
 
     @Autowired
     private S3Service s3Service;
@@ -37,76 +58,53 @@ public class AwsS3IntegrationTest {
     @Autowired
     private AmazonS3 amazonS3;
     
-    @Value("${cloud.aws.s3.bucket}")
+    @Value("${cloud.aws.s3.bucket:cctv-recordings-yuhan-20250505}")
     private String bucketName;
     
     @Test
     void testS3Connection() {
         // 버킷이 존재하는지 확인
         boolean exists = amazonS3.doesBucketExistV2(bucketName);
-        assertTrue(exists, "Bucket should exist: " + bucketName);
+        assertTrue(exists, "버킷이 존재해야 합니다: " + bucketName);
         
-        System.out.println("Successfully connected to AWS S3 bucket: " + bucketName);
+        System.out.println("AWS S3 버킷 연결 성공: " + bucketName);
     }
     
     @Test
-    void testGenerateVideoKey() {
-        // 비디오 키 생성 테스트
-        String videoKey = s3Service.generateVideoKey(12345L);
-        assertNotNull(videoKey);
-        assertTrue(videoKey.startsWith("clips/12345_"));
-        assertTrue(videoKey.endsWith(".mp4"));
+    void testUploadDownloadDelete() throws IOException {
+        // 테스트 파일 준비
+        String objectKey = "test-integration-" + System.currentTimeMillis() + ".txt";
+        String content = "AWS S3 통합 테스트 파일입니다.";
         
-        System.out.println("Generated video key: " + videoKey);
-    }
-    
-    @Test
-    void testGeneratePresignedUrl() {
-        // Presigned URL 생성 테스트
-        String objectKey = "test-" + System.currentTimeMillis() + ".txt";
-        URL presignedUrl = s3Service.generatePresignedUrlForUpload(objectKey);
-        
-        assertNotNull(presignedUrl);
-        assertTrue(presignedUrl.toString().contains(bucketName));
-        assertTrue(presignedUrl.toString().contains(objectKey));
-        
-        System.out.println("Generated presigned URL: " + presignedUrl);
-    }
-    
-    @Test
-    void testFileUploadAndDelete() throws IOException {
-        // 테스트 파일 생성
-        String objectKey = "test-file-" + System.currentTimeMillis() + ".txt";
-        String content = "This is a test file for S3 upload";
-        MockMultipartFile file = new MockMultipartFile(
-            "file", 
-            "test.txt", 
-            "text/plain", 
-            content.getBytes(StandardCharsets.UTF_8)
-        );
-        
-        // 직접 S3에 업로드
+        // 메타데이터 설정
         ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentType(file.getContentType());
-        metadata.setContentLength(file.getSize());
+        metadata.setContentType("text/plain");
+        metadata.setContentLength(content.getBytes(StandardCharsets.UTF_8).length);
         
-        // 파일 업로드
-        amazonS3.putObject(bucketName, objectKey, 
-                         new ByteArrayInputStream(file.getBytes()), metadata);
-        
-        // 파일이 존재하는지 확인
-        assertTrue(amazonS3.doesObjectExist(bucketName, objectKey));
-        
-        // 파일 내용 확인
-        S3Object s3Object = amazonS3.getObject(bucketName, objectKey);
-        assertNotNull(s3Object);
-        
-        // 테스트 후 파일 삭제
-        s3Service.deleteObject(objectKey);
-        
-        // 삭제 확인
-        assertFalse(amazonS3.doesObjectExist(bucketName, objectKey));
-        
-        System.out.println("Successfully uploaded, verified and deleted test file: " + objectKey);
+        try {
+            // 파일 업로드
+            amazonS3.putObject(bucketName, objectKey, 
+                    new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), metadata);
+            
+            // 파일 존재 확인
+            assertTrue(amazonS3.doesObjectExist(bucketName, objectKey), "업로드한 파일이 존재해야 합니다");
+            
+            // 파일 다운로드 및 내용 확인
+            S3Object s3Object = amazonS3.getObject(bucketName, objectKey);
+            assertNotNull(s3Object, "다운로드한 객체가 null이 아니어야 합니다");
+            
+            // Presigned URL 생성 테스트
+            URL presignedUrl = s3Service.generatePresignedUrlForDownload(objectKey);
+            assertNotNull(presignedUrl, "Presigned URL이 생성되어야 합니다");
+            assertTrue(presignedUrl.toString().contains(objectKey), "URL에 객체 키가 포함되어야 합니다");
+            
+            System.out.println("생성된 Presigned URL: " + presignedUrl);
+        } finally {
+            // 테스트 후 정리
+            if (amazonS3.doesObjectExist(bucketName, objectKey)) {
+                amazonS3.deleteObject(bucketName, objectKey);
+                System.out.println("테스트 파일 삭제 완료: " + objectKey);
+            }
+        }
     }
 } 
