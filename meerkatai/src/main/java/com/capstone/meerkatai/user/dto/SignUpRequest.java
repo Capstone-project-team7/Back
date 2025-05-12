@@ -22,21 +22,20 @@ import lombok.Setter;
 @AllArgsConstructor
 public class SignUpRequest {
 
-  @NotBlank
-  @Email
+  @NotBlank(message = "이메일은 필수 입력 항목입니다")
+  @Email(message = "올바른 형식의 이메일 주소여야 합니다")
   @JsonProperty("user_email")
   private String userEmail;
 
-  @NotBlank
+  @NotBlank(message = "비밀번호는 필수 입력 항목입니다")
   @JsonProperty("user_password")
   private String userPassword;
 
-
-  @NotBlank
+  @NotBlank(message = "이름은 필수 입력 항목입니다")
   @JsonProperty("user_name")
   private String userName;
 
-  @NotNull
+  @NotNull(message = "약관 동의 여부는 필수 입력 항목입니다")
   @JsonProperty("agreement_status")
   private Boolean agreementStatus;
 

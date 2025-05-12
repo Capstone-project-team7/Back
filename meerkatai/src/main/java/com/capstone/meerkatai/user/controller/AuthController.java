@@ -65,6 +65,7 @@ public class AuthController {
    * <pre>
    * {
    *   "user_email": "user@example.com",
+   *   "user_password": "currentpassword123",
    *   "new_password": "newpassword123"
    * }
    * </pre>
@@ -120,8 +121,7 @@ public class AuthController {
    * {
    *   "user_id": 123,
    *   "user_name": "김철수",
-   *   "user_password": "newpassword123",
-   *   "notify_status": false
+   *   "user_password": "newpassword123"
    * }
    * </pre>
    */
@@ -146,12 +146,5 @@ public class AuthController {
   public ResponseEntity<ApiResponse<String>> withdraw(@Valid @RequestBody WithdrawRequest request) {
     authService.withdraw(request);
     return ResponseEntity.ok(new ApiResponse<>("success", "회원 탈퇴가 완료되었습니다."));
-  }
-
-  //컨트롤러에서 발생하는 예외를 처리
-
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<ApiResponse<String>> handleException(Exception e) {
-    return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage()));
   }
 }

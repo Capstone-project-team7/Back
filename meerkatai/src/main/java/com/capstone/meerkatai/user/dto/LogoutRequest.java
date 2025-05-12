@@ -19,7 +19,7 @@ public class LogoutRequest {
    * 이 ID를 통해 로그아웃 처리할 사용자를 식별합니다.
    * </p>
    */
-  @NotNull
+  @NotNull(message = "사용자 ID는 필수 입력 항목입니다")
   @JsonProperty("user_id")
   private Long userId;
 }
