@@ -23,6 +23,13 @@ repositories {
 	mavenCentral()
 }
 
+dependencyManagement {
+    imports {
+        mavenBom 'software.amazon.awssdk:bom:2.25.12'
+        mavenBom 'org.springframework.cloud:spring-cloud-dependencies:Hoxton.SR12'
+    }
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
@@ -45,6 +52,19 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	implementation 'org.bytedeco:javacv-platform:1.5.8'
+	
+	// Spring Cloud AWS
+	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
+	
+	// AWS S3 Dependencies - v2
+	implementation 'software.amazon.awssdk:s3'
+	implementation 'software.amazon.awssdk:auth'
+	
+	// AWS SDK v1 (기존 코드 호환성 유지를 위해)
+	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.648'
+	
+	// 테스트를 위한 Mockito 의존성
+	testImplementation 'org.mockito:mockito-core:5.4.0'
 }
 
 tasks.named('test') {

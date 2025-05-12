@@ -3,6 +3,7 @@ package com.capstone.meerkatai.video.service;
 import com.capstone.meerkatai.alarm.dto.AnomalyVideoMetadataRequest;
 import com.capstone.meerkatai.anomalybehavior.entity.AnomalyBehavior;
 import com.capstone.meerkatai.anomalybehavior.repository.AnomalyBehaviorRepository;
+import com.capstone.meerkatai.global.service.S3Service;
 import com.capstone.meerkatai.streamingvideo.entity.StreamingVideo;
 import com.capstone.meerkatai.streamingvideo.repository.StreamingVideoRepository;
 import com.capstone.meerkatai.user.entity.User;
@@ -15,8 +16,10 @@ import com.capstone.meerkatai.video.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -39,6 +42,10 @@ public class VideoService {
     private final UserRepository userRepository;
     private final StreamingVideoRepository streamingVideoRepository;
     private final AnomalyBehaviorRepository anomalyBehaviorRepository;
+    private final S3Service s3Service;
+    
+    @Value("${aws.s3.bucket-name}")
+    private String bucketName;
 
     //    필터 값 없는 경우(홈페이지 이동 OR 필터 값 없이 페이지 이동)
 //    {
@@ -160,6 +167,11 @@ public class VideoService {
                 if (path.startsWith("http")) {
                     URL url = new URL(path);
                     stream = url.openStream();
+                } else if (path.startsWith("s3://")) {
+                    // S3 경로 형식: s3://버킷명/객체키
+                    String objectKey = path.substring(("s3://" + bucketName + "/").length());
+                    URL presignedUrl = s3Service.generatePresignedUrlForDownload(objectKey);
+                    stream = presignedUrl.openStream();
                 } else {
                     File file = new File(path);
                     if (!file.exists()) continue;
@@ -167,21 +179,45 @@ public class VideoService {
                 }
 
                 result.add(Pair.of("video_" + video.getVideoId() + ".mp4", stream));
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                log.error("비디오 스트림 가져오기 실패: {} ({})", video.getVideoId(), e.getMessage());
+            }
         }
 
         return result;
     }
 
     //비디오 삭제 메소드
+    @Transactional
     public List<Long> deleteVideosByUser(Long userId, List<Long> videoIds) {
         // 1. userId와 videoIds로 사용자 본인의 영상만 필터링
         List<Video> videos = videoRepository.findByUser_UserIdAndVideoIdIn(userId, videoIds);
 
-        // 2. 삭제
+        // 2. S3에서 영상 및 썸네일 파일 삭제
+        for (Video video : videos) {
+            try {
+                String filePath = video.getFilePath();
+                String thumbnailPath = video.getThumbnailPath();
+                
+                // S3 경로인 경우에만 삭제 시도
+                if (filePath != null && filePath.startsWith("s3://")) {
+                    String objectKey = filePath.substring(("s3://" + bucketName + "/").length());
+                    s3Service.deleteObject(objectKey);
+                }
+                
+                if (thumbnailPath != null && thumbnailPath.startsWith("s3://")) {
+                    String objectKey = thumbnailPath.substring(("s3://" + bucketName + "/").length());
+                    s3Service.deleteObject(objectKey);
+                }
+            } catch (Exception e) {
+                log.error("S3 파일 삭제 실패: {} ({})", video.getVideoId(), e.getMessage());
+            }
+        }
+
+        // 3. DB에서 삭제
         videoRepository.deleteAll(videos);
 
-        // 3. 실제 삭제된 ID만 반환
+        // 4. 실제 삭제된 ID만 반환
         return videos.stream()
             .map(Video::getVideoId)
             .collect(Collectors.toList());
@@ -209,6 +245,7 @@ public class VideoService {
     }
 
 
+    @Transactional
     public Video saveVideo(AnomalyVideoMetadataRequest request, AnomalyBehavior anomalyBehavior) {
         // 1. 연관 엔티티 조회
         User user = userRepository.findById(request.getUserId())
@@ -217,24 +254,38 @@ public class VideoService {
         StreamingVideo streamingVideo = streamingVideoRepository.findById(request.getCctvId())
                 .orElseThrow(() -> new RuntimeException("스트리밍 비디오 없음"));
 
-        // 2. 영상 정보 분석
+        // 2. S3 객체 키 생성
+        String videoKey = s3Service.generateVideoKey(request.getCctvId());
+        String thumbnailKey = s3Service.generateThumbnailKey(videoKey);
+        
+        // 3. S3 URL 생성
+        URL videoPresignedUrl = s3Service.generatePresignedUrlForUpload(videoKey);
+        URL thumbnailPresignedUrl = s3Service.generatePresignedUrlForUpload(thumbnailKey);
+        
+        // 4. S3 경로 생성 (s3://버킷명/객체키 형식)
+        String videoFullPath = "s3://" + bucketName + "/" + videoKey;
+        String thumbnailFullPath = "s3://" + bucketName + "/" + thumbnailKey;
+        
+        // 5. 영상 정보 분석 (가능하다면, 업로드 전이라 실제 데이터가 없으면 스킵)
         long fileSize = getRemoteFileSize(request.getVideoUrl());
         double duration = 0;
-        boolean playable = false;
-
-        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(new URL(request.getVideoUrl()))) {
-            grabber.start();
-            duration = grabber.getLengthInTime() / 1_000_000.0; // 초 단위
-            playable = grabber.getLengthInFrames() > 0;
-            grabber.stop();
-        } catch (Exception e) {
-            System.err.println("⚠️ 영상 분석 실패: " + e.getMessage());
+        boolean playable = true; // 기본적으로 재생 가능으로 설정
+        
+        if (request.getVideoUrl() != null && !request.getVideoUrl().isEmpty()) {
+            try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(new URL(request.getVideoUrl()))) {
+                grabber.start();
+                duration = grabber.getLengthInTime() / 1_000_000.0; // 초 단위
+                playable = grabber.getLengthInFrames() > 0;
+                grabber.stop();
+            } catch (Exception e) {
+                log.warn("⚠️ 영상 분석 실패: {}", e.getMessage());
+            }
         }
 
-        // 3. 비디오 엔티티 저장
+        // 6. 비디오 엔티티 저장
         Video video = Video.builder()
-                .filePath(request.getVideoUrl())
-                .thumbnailPath(request.getThumbnailUrl())
+                .filePath(videoFullPath)
+                .thumbnailPath(thumbnailFullPath)
                 .duration((long)duration)
                 .fileSize(fileSize)
                 .videoStatus(playable)
@@ -244,7 +295,13 @@ public class VideoService {
                 .build();
 
         Video saved = videoRepository.save(video);
-        log.info("✅ 비디오 저장 완료: video_id={}", saved.getVideoId());
+        log.info("✅ 비디오 저장 완료: video_id={}, 영상 경로={}, 썸네일 경로={}", 
+                saved.getVideoId(), videoFullPath, thumbnailFullPath);
+                
+        // 7. 실제 Upload URL 로그 남기기 (클라이언트에서 업로드에 사용)
+        log.info("✅ 영상 업로드 URL: {}", videoPresignedUrl);
+        log.info("✅ 썸네일 업로드 URL: {}", thumbnailPresignedUrl);
+                
         return saved;
     }
 
