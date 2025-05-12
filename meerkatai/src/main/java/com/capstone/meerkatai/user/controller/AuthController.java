@@ -121,14 +121,28 @@ public class AuthController {
    * {
    *   "user_id": 123,
    *   "user_name": "김철수",
-   *   "user_password": "newpassword123"
+   *   "user_password": "currentpassword",
+   *   "new_password": "newpassword123"
+   * }
+   * </pre>
+   * 
+   * 응답 예시:
+   * <pre>
+   * {
+   *   "status": "success",
+   *   "data": {
+   *     "user_id": 123,
+   *     "user_name": "김철수",
+   *     "updated_at": "2023-06-01T12:34:56.789Z"
+   *   },
+   *   "message": "비밀번호가 성공적으로 변경되었습니다."
    * }
    * </pre>
    */
   @PutMapping("/update")
   public ResponseEntity<ApiResponse<UpdateUserResponse>> updateUser(@Valid @RequestBody UpdateUserRequest request) {
-    UpdateUserResponse response = authService.updateUser(request);
-    return ResponseEntity.ok(new ApiResponse<>("success", response));
+    UpdateUserResult result = authService.updateUser(request);
+    return ResponseEntity.ok(new ApiResponse<>("success", result.getResponse(), result.getMessage()));
   }
 
   /**
