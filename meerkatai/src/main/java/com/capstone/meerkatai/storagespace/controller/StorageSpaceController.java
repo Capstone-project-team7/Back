@@ -13,24 +13,4 @@ import java.util.Optional;
 public class StorageSpaceController {
 
     private final StorageSpaceService storageSpaceService;
-
-    @GetMapping("/{id}")
-    public Optional<StorageSpace> getById(@PathVariable Integer id) {
-        return storageSpaceService.findById(id);
-    }
-
-    @GetMapping("/user/{userId}")
-    public Optional<StorageSpace> getByUserId(@PathVariable Integer userId) {
-        return storageSpaceService.findByUserId(userId);
-    }
-
-    @PostMapping
-    public StorageSpace create(@RequestBody StorageSpace storageSpace) {
-        return storageSpaceService.save(storageSpace);
-    }
-
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Integer id) {
-        storageSpaceService.delete(id);
-    }
 }

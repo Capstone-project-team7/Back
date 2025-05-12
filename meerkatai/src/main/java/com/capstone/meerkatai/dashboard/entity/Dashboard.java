@@ -4,16 +4,18 @@ import com.capstone.meerkatai.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Getter @Setter @NoArgsConstructor
 public class Dashboard {
     @Id
-    private Integer dataId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long dataId;
 
     @Column(nullable = false)
-    private LocalDateTime time;
+    private LocalDate time;
 
     @Column(nullable = false)
     private Integer type1Count;
@@ -27,6 +29,8 @@ public class Dashboard {
     private Integer type5Count;
     @Column(nullable = false)
     private Integer type6Count;
+    @Column(nullable = false)
+    private Integer type7Count;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

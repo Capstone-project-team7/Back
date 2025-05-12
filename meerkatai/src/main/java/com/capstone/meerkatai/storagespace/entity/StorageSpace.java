@@ -6,15 +6,18 @@ import lombok.*;
 
 @Entity
 @Getter @Setter @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class StorageSpace {
     @Id
-    private Integer storageId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long storageId;
 
     @Column(nullable = false)
-    private Integer totalSpace;
+    private Long totalSpace;
 
     @Column(nullable = false)
-    private Integer usedSpace;
+    private Long usedSpace;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
