@@ -58,7 +58,8 @@ public class SecurityConfig {
             .requestMatchers(
                 "/api/v1/auth/register",
                 "/api/v1/auth/login",
-                "/api/v1/auth/refresh"
+                "/api/v1/auth/refresh",
+                "/api/anomaly/notify"
             ).permitAll()
             // 나머지 요청은 모두 허용
             .anyRequest().permitAll()
@@ -84,7 +85,10 @@ public class SecurityConfig {
  @Bean
  public CorsConfigurationSource corsConfigurationSource() {
    CorsConfiguration configuration = new CorsConfiguration();
-   configuration.setAllowedOrigins(List.of("http://localhost:5173"));  // 프론트엔드 서버 주소
+   configuration.setAllowedOrigins(List.of(
+    "http://localhost:5173",  // 기존 프론트엔드 서버 주소
+    "http://localhost:8000"   // FastAPI 서버 주소 추가
+));
    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));  // 허용할 HTTP 메서드
    configuration.setAllowedHeaders(List.of("*"));  // 모든 헤더 허용
    configuration.setAllowCredentials(true);  // 인증 정보 포함 허용

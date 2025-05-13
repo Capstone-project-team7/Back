@@ -214,8 +214,13 @@ public class VideoService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("사용자 없음"));
 
-        StreamingVideo streamingVideo = streamingVideoRepository.findById(request.getCctvId())
-                .orElseThrow(() -> new RuntimeException("스트리밍 비디오 없음"));
+        // StreamingVideo를 CCTV ID로 조회 (기존 방식 수정)
+        List<StreamingVideo> streamingVideos = streamingVideoRepository.findByCctvCctvId(request.getCctvId());
+        if (streamingVideos.isEmpty()) {
+            throw new RuntimeException("스트리밍 비디오 없음: CCTV ID=" + request.getCctvId());
+        }
+        StreamingVideo streamingVideo = streamingVideos.get(0);
+        log.info("StreamingVideo 조회 성공: id={}", streamingVideo.getStreamingVideoId());
 
         // 2. 영상 정보 분석
         long fileSize = getRemoteFileSize(request.getVideoUrl());
