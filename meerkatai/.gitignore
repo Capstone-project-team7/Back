@@ -36,3 +36,6 @@ out/
 
 ### VS Code ###
 .vscode/
+.DS_Store
+._* # .DS_Store와 유사한 AppleDouble 파일도 무시
+__MACOSX # 압축 시 생성되는 macOS 메타데이터 폴더 무시
