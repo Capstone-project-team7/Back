@@ -18,6 +18,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -94,14 +97,19 @@ public class AnomalyWebhookController {
      * Body: { "notification": true }
      */
     @PutMapping("/v1/user/notification")
-    public ResponseEntity<String> updateNotificationSetting(@RequestBody UserNotificationUpdateRequest request) {
+    public ResponseEntity<Map<String, String>> updateNotificationSetting(@RequestBody UserNotificationUpdateRequest request) {
         Long userId = getCurrentUserId();
 
         boolean updated = userService.updateNotificationStatus(userId, request.isNotification());
 
-        return updated
-                ? ResponseEntity.ok("✅ 알림 수신 설정이 업데이트되었습니다.")
-                : ResponseEntity.badRequest().body("❌ 사용자 알림 설정 변경 실패");
+        Map<String, String> response = new HashMap<>();
+        if (updated) {
+            response.put("status", "success");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("status", "fail");
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }
 
