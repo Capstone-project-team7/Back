@@ -236,10 +236,26 @@ public class VideoService {
             System.err.println("⚠️ 영상 분석 실패: " + e.getMessage());
         }
 
+        // 썸네일 URL이 null인 경우 처리
+        String thumbnailUrl = request.getThumbnailUrl();
+        if (thumbnailUrl == null || thumbnailUrl.trim().isEmpty()) {
+            // 비디오 URL에서 확장자를 제거하고 썸네일 확장자 추가
+            thumbnailUrl = request.getVideoUrl();
+            if (thumbnailUrl != null && !thumbnailUrl.trim().isEmpty()) {
+                // .mp4를 .jpg로 변경 (기본 썸네일 형식)
+                thumbnailUrl = thumbnailUrl.replaceAll("\\.mp4$", ".jpg");
+                log.warn("썸네일 URL이 없어 비디오 URL에서 생성: {}", thumbnailUrl);
+            } else {
+                // 비디오 URL도 없는 경우 기본 썸네일 URL 설정
+                thumbnailUrl = "https://placeholder-image.jpg";
+                log.warn("썸네일과 비디오 URL이 모두 없어 기본값 사용: {}", thumbnailUrl);
+            }
+        }
+
         // 3. 비디오 엔티티 저장
         Video video = Video.builder()
                 .filePath(request.getVideoUrl())
-                .thumbnailPath(request.getThumbnailUrl())
+                .thumbnailPath(thumbnailUrl) // 수정된 썸네일 URL 사용
                 .duration((long)duration)
                 .fileSize(fileSize)
                 .videoStatus(playable)
