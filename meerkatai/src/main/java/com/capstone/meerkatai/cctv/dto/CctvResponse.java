@@ -1,6 +1,7 @@
 package com.capstone.meerkatai.cctv.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -52,6 +53,18 @@ public class CctvResponse {
    */
   @JsonProperty("ip_address")
   private String ipAddress;
+
+  /**
+   * CCTV의 관리자 정보입니다.
+   */
+  @JsonProperty("cctv_admin")
+  private String cctvAdmin;
+
+  /**
+   * CCTV의 접근 경로입니다.
+   */
+  @JsonProperty("cctv_path")
+  private String cctvPath;
 
   /**
    * CCTV 정보가 생성된 시간입니다.
