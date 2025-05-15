@@ -10,6 +10,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/streaming-video")
 @RequiredArgsConstructor
@@ -36,8 +39,8 @@ public class StreamingVideoController {
    * - FastAPI에 사용자 + CCTV 정보 전송 및 스트리밍 연결 요청
    */
 
-  @PostMapping("/connect/{cctvId}")
-  public ResponseEntity<String> connectToCctv(@PathVariable Long cctvId) {
+  @PutMapping("/connect/{cctvId}")
+  public ResponseEntity<Map<String, String>> connectToCctv(@PathVariable Long cctvId) {
     //사용자 조회
     Long userId = getCurrentUserId();
 
@@ -65,9 +68,16 @@ public class StreamingVideoController {
     // 3. 연결 테스트 + 저장 + FastAPI 전송
     boolean connected = streamingVideoService.connectAndRegister(userId, cctvId, rtspUrl);
 
-    return connected
-            ? ResponseEntity.ok("✅ RTSP 연결 성공 및 연동 완료")
-            : ResponseEntity.status(500).body("❌ RTSP 연결 실패");
+    Map<String, String> response = new HashMap<>();
+    if (connected) {
+      response.put("status", "success");
+      response.put("message", "RTSP 연결 성공 및 연동 완료");
+      return ResponseEntity.ok(response);
+    } else {
+      response.put("status", "fail");
+      response.put("message", "RTSP 연결 실패");
+      return ResponseEntity.status(500).body(response);
+    }
   }
 
   /**
@@ -76,15 +86,21 @@ public class StreamingVideoController {
    * - FastAPI로 중지 요청 전달
    */
   @PutMapping("/disconnect/{cctvId}")
-  public ResponseEntity<String> disconnectFromCctv(@PathVariable Long cctvId) {
+  public ResponseEntity<Map<String, String>> disconnectFromCctv(@PathVariable Long cctvId) {
     Long userId = getCurrentUserId();  // 현재 로그인된 사용자
 
     boolean disconnected = streamingVideoService.disconnectAndNotify(userId, cctvId);
 
-    return disconnected
-            ? ResponseEntity.ok("🛑 스트리밍 중지 완료")
-            : ResponseEntity.status(500).body("❌ 스트리밍 중지 실패 (FastAPI 요청 실패)");
+    Map<String, String> response = new HashMap<>();
+    if (disconnected) {
+      response.put("status", "success");
+      response.put("message", "스트리밍 중지 완료");
+      return ResponseEntity.ok(response);
+    } else {
+      response.put("status", "fail");
+      response.put("message", "스트리밍 중지 실패 (FastAPI 요청 실패)");
+      return ResponseEntity.status(500).body(response);
+    }
   }
-
 }
 
