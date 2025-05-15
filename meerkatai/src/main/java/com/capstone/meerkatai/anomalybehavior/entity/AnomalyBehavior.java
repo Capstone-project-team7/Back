@@ -12,9 +12,11 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "anomaly_behavior")
 public class AnomalyBehavior {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "anomaly_id", nullable = false, updatable = false)
     private Long anomalyId;
 
     @Column(nullable = false)
