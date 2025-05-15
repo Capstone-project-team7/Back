@@ -115,12 +115,40 @@ public class VideoService {
             });
         }
 
+//        // 이상행동 유형 필터 적용
+//        if (req.getAnomaly_behavior_type() != null && !req.getAnomaly_behavior_type().isBlank()) {
+//            stream = stream.filter(video ->
+//                video.getAnomalyBehavior().getAnomalyBehaviorType().equalsIgnoreCase(req.getAnomaly_behavior_type())
+//            );
+//        }
+
         // 이상행동 유형 필터 적용
         if (req.getAnomaly_behavior_type() != null && !req.getAnomaly_behavior_type().isBlank()) {
-            stream = stream.filter(video ->
-                video.getAnomalyBehavior().getAnomalyBehaviorType().equalsIgnoreCase(req.getAnomaly_behavior_type())
+            String typeKey = req.getAnomaly_behavior_type().toLowerCase();
+
+            // typeX -> 키워드 매핑
+            Map<String, String> keywordMap = Map.of(
+                    "type1", "전도",
+                    "type2", "파손",
+                    "type3", "방화",
+                    "type4", "흡연",
+                    "type5", "유기",
+                    "type6", "절도",
+                    "type7", "폭행"
             );
+
+            String targetKeyword = keywordMap.get(typeKey);
+
+            if (targetKeyword != null) {
+                stream = stream.filter(video ->
+                        video.getAnomalyBehavior() != null &&
+                                video.getAnomalyBehavior().getAnomalyBehaviorType() != null &&
+                                video.getAnomalyBehavior().getAnomalyBehaviorType().contains(targetKeyword)
+                );
+            }
         }
+
+
 
         List<Video> filtered = stream.toList();
 
