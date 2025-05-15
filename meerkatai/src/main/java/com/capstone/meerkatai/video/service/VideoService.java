@@ -1,8 +1,10 @@
 package com.capstone.meerkatai.video.service;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.capstone.meerkatai.alarm.dto.AnomalyVideoMetadataRequest;
 import com.capstone.meerkatai.anomalybehavior.entity.AnomalyBehavior;
 import com.capstone.meerkatai.anomalybehavior.repository.AnomalyBehaviorRepository;
+import com.capstone.meerkatai.global.service.S3Service;
 import com.capstone.meerkatai.streamingvideo.entity.StreamingVideo;
 import com.capstone.meerkatai.streamingvideo.repository.StreamingVideoRepository;
 import com.capstone.meerkatai.user.entity.User;
@@ -27,6 +29,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,6 +42,7 @@ public class VideoService {
     private final UserRepository userRepository;
     private final StreamingVideoRepository streamingVideoRepository;
     private final AnomalyBehaviorRepository anomalyBehaviorRepository;
+    private final S3Service s3Service;
 
     //    필터 값 없는 경우(홈페이지 이동 OR 필터 값 없이 페이지 이동)
 //    {
@@ -64,18 +68,24 @@ public class VideoService {
 
         // 엔티티 → DTO 변환
         List<GetVideoListResponse.VideoDto> videoDtoList = pagedVideos.stream()
-            .map(video -> new GetVideoListResponse.VideoDto(
-                video.getVideoId(),
-                video.getFilePath(),
-                video.getThumbnailPath(),
-                video.getDuration(),
-                video.getFileSize(),
-                video.getVideoStatus(),
-                video.getAnomalyBehavior().getAnomalyTime().toString(), // 수정된 부분
-                video.getStreamingVideo().getStreamingVideoId(),
-                video.getAnomalyBehavior().getAnomalyBehaviorType(), // 이 부분도 anomalyBehavior를 통해 접근해야 함
-                video.getStreamingVideo().getCctv().getCctvName()
-            ))
+            .map(video -> {
+                // S3 URL을 presigned URL로 변환
+                String videoPath = generatePresignedUrlIfNeeded(video.getFilePath());
+                String thumbnailPath = generatePresignedUrlIfNeeded(video.getThumbnailPath());
+                
+                return new GetVideoListResponse.VideoDto(
+                    video.getVideoId(),
+                    videoPath,
+                    thumbnailPath,
+                    video.getDuration(),
+                    video.getFileSize(),
+                    video.getVideoStatus(),
+                    video.getAnomalyBehavior().getAnomalyTime().toString(),
+                    video.getStreamingVideo().getStreamingVideoId(),
+                    video.getAnomalyBehavior().getAnomalyBehaviorType(),
+                    video.getStreamingVideo().getCctv().getCctvName()
+                );
+            })
             .collect(Collectors.toList());
 
         // pagination 구성
@@ -124,26 +134,29 @@ public class VideoService {
         List<Video> pagedVideos = filtered.stream().skip(offset).limit(limit).toList();
 
         List<GetVideoListResponse.VideoDto> videoDtoList = pagedVideos.stream()
-            .map(video -> new GetVideoListResponse.VideoDto(
-                video.getVideoId(),
-                video.getFilePath(),
-                video.getThumbnailPath(),
-                video.getDuration(),
-                video.getFileSize(),
-                video.getVideoStatus(),
-                video.getAnomalyBehavior().getAnomalyTime().toString(),
-                video.getStreamingVideo().getStreamingVideoId(),
-                video.getAnomalyBehavior().getAnomalyBehaviorType(),
-                video.getStreamingVideo().getCctv().getCctvName()
-            ))
+            .map(video -> {
+                // S3 URL을 presigned URL로 변환
+                String videoPath = generatePresignedUrlIfNeeded(video.getFilePath());
+                String thumbnailPath = generatePresignedUrlIfNeeded(video.getThumbnailPath());
+                
+                return new GetVideoListResponse.VideoDto(
+                    video.getVideoId(),
+                    videoPath,
+                    thumbnailPath,
+                    video.getDuration(),
+                    video.getFileSize(),
+                    video.getVideoStatus(),
+                    video.getAnomalyBehavior().getAnomalyTime().toString(),
+                    video.getStreamingVideo().getStreamingVideoId(),
+                    video.getAnomalyBehavior().getAnomalyBehaviorType(),
+                    video.getStreamingVideo().getCctv().getCctvName()
+                );
+            })
             .toList();
 
         GetVideoListResponse.Pagination pagination = new GetVideoListResponse.Pagination(total, page, pages, limit);
         return new GetVideoListResponse("success", new GetVideoListResponse.Data(videoDtoList, pagination));
     }
-
-
-
 
 
     // 비디오 다운로드 메소드
@@ -158,8 +171,17 @@ public class VideoService {
                 InputStream stream;
 
                 if (path.startsWith("http")) {
-                    URL url = new URL(path);
-                    stream = url.openStream();
+                    // S3 URL인 경우 Presigned URL 생성하여 처리
+                    if (s3Service.isS3Url(path)) {
+                        // 객체 키 추출 (S3 URL에서 버킷 이름 이후 부분)
+                        String objectKey = s3Service.extractS3Key(path);
+                        URL presignedUrl = s3Service.generatePresignedUrlForDownload(objectKey);
+                        stream = presignedUrl.openStream();
+                    } else {
+                        // 일반 HTTP URL
+                        URL url = new URL(path);
+                        stream = url.openStream();
+                    }
                 } else {
                     File file = new File(path);
                     if (!file.exists()) continue;
@@ -167,7 +189,9 @@ public class VideoService {
                 }
 
                 result.add(Pair.of("video_" + video.getVideoId() + ".mp4", stream));
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                log.error("비디오 스트림 생성 중 오류 발생: {}", e.getMessage());
+            }
         }
 
         return result;
@@ -178,7 +202,28 @@ public class VideoService {
         // 1. userId와 videoIds로 사용자 본인의 영상만 필터링
         List<Video> videos = videoRepository.findByUser_UserIdAndVideoIdIn(userId, videoIds);
 
-        // 2. 삭제
+        // S3에서 객체 삭제 처리 추가
+        for (Video video : videos) {
+            try {
+                // 비디오 파일 삭제
+                if (s3Service.isS3Url(video.getFilePath())) {
+                    String videoKey = s3Service.extractS3Key(video.getFilePath());
+                    s3Service.deleteObject(videoKey);
+                    log.info("S3에서 비디오 삭제 완료: {}", videoKey);
+                }
+                
+                // 썸네일 삭제
+                if (s3Service.isS3Url(video.getThumbnailPath())) {
+                    String thumbnailKey = s3Service.extractS3Key(video.getThumbnailPath());
+                    s3Service.deleteObject(thumbnailKey);
+                    log.info("S3에서 썸네일 삭제 완료: {}", thumbnailKey);
+                }
+            } catch (Exception e) {
+                log.error("S3 객체 삭제 중 오류: {}", e.getMessage());
+            }
+        }
+
+        // 2. DB에서 삭제
         videoRepository.deleteAll(videos);
 
         // 3. 실제 삭제된 ID만 반환
@@ -192,10 +237,14 @@ public class VideoService {
         Video video = videoRepository.findByUserUserIdAndVideoId(userId, videoId)
             .orElseThrow(() -> new RuntimeException("비디오 없음"));
 
+        // S3 URL을 presigned URL로 변환
+        String videoPath = generatePresignedUrlIfNeeded(video.getFilePath());
+        String thumbnailPath = generatePresignedUrlIfNeeded(video.getThumbnailPath());
+
         return new VideoDetailsResponse(
             video.getVideoId(),
-            video.getFilePath(),
-            video.getThumbnailPath(),
+            videoPath,
+            thumbnailPath,
             video.getDuration(),
             video.getFileSize(),
             video.getVideoStatus(),
@@ -223,39 +272,76 @@ public class VideoService {
         log.info("StreamingVideo 조회 성공: id={}", streamingVideo.getStreamingVideoId());
 
         // 2. 영상 정보 분석
-        long fileSize = getRemoteFileSize(request.getVideoUrl());
-        double duration = 0;
-        boolean playable = false;
-
-        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(new URL(request.getVideoUrl()))) {
-            grabber.start();
-            duration = grabber.getLengthInTime() / 1_000_000.0; // 초 단위
-            playable = grabber.getLengthInFrames() > 0;
-            grabber.stop();
-        } catch (Exception e) {
-            System.err.println("⚠️ 영상 분석 실패: " + e.getMessage());
-        }
-
-        // 썸네일 URL이 null인 경우 처리
+        String videoUrl = request.getVideoUrl();
         String thumbnailUrl = request.getThumbnailUrl();
+        
+        // S3 URL 검증 및 처리
+        if (!s3Service.isS3Url(videoUrl)) {
+            log.warn("비디오 URL이 S3 URL 형식이 아닙니다: {}", videoUrl);
+        }
+        
+        // 썸네일 URL 처리
         if (thumbnailUrl == null || thumbnailUrl.trim().isEmpty()) {
-            // 비디오 URL에서 확장자를 제거하고 썸네일 확장자 추가
-            thumbnailUrl = request.getVideoUrl();
-            if (thumbnailUrl != null && !thumbnailUrl.trim().isEmpty()) {
-                // .mp4를 .jpg로 변경 (기본 썸네일 형식)
-                thumbnailUrl = thumbnailUrl.replaceAll("\\.mp4$", ".jpg");
-                log.warn("썸네일 URL이 없어 비디오 URL에서 생성: {}", thumbnailUrl);
+            // S3 URL 패턴에 맞게 썸네일 URL 생성
+            if (videoUrl != null && !videoUrl.trim().isEmpty()) {
+                thumbnailUrl = s3Service.generateThumbnailUrlFromVideoUrl(videoUrl);
+                log.info("비디오 URL에서 썸네일 URL 생성: {}", thumbnailUrl);
             } else {
-                // 비디오 URL도 없는 경우 기본 썸네일 URL 설정
-                thumbnailUrl = "https://placeholder-image.jpg";
-                log.warn("썸네일과 비디오 URL이 모두 없어 기본값 사용: {}", thumbnailUrl);
+                // 기본 썸네일 URL 설정
+                thumbnailUrl = "https://cctv-recordings-yuhan-20250505.s3.ap-northeast-2.amazonaws.com/thumbnails/default.jpg";
+                log.warn("썸네일 URL 생성 불가, 기본값 사용: {}", thumbnailUrl);
             }
         }
+        
+        // 3. S3에서 직접 메타데이터 가져오기
+        String videoKey = null;
+        long fileSize = 0;
+        double duration = 0;
+        boolean playable = false;
+        Map<String, String> userMetadata = null;
 
-        // 3. 비디오 엔티티 저장
+        try {
+            // S3 객체 키 추출
+            videoKey = s3Service.extractS3Key(videoUrl);
+            log.info("추출된 S3 객체 키: {}", videoKey);
+            
+            // S3에서 메타데이터 가져오기
+            ObjectMetadata metadata = s3Service.getObjectMetadata(videoKey);
+            if (metadata != null) {
+                // 파일 크기
+                fileSize = metadata.getContentLength();
+                log.info("S3 메타데이터에서 파일 크기 조회: {} 바이트", fileSize);
+                
+                // 사용자 정의 메타데이터
+                userMetadata = metadata.getUserMetadata();
+                
+                // 메타데이터에서 재생 시간 정보 가져오기 (있는 경우)
+                if (userMetadata != null && userMetadata.containsKey("video-duration")) {
+                    try {
+                        duration = Double.parseDouble(userMetadata.get("video-duration"));
+                        playable = true;
+                        log.info("S3 메타데이터에서 영상 길이 조회: {}초", duration);
+                    } catch (NumberFormatException e) {
+                        log.warn("메타데이터에서 영상 길이를 파싱할 수 없습니다. 기본값 사용");
+                    }
+                }
+            } else {
+                log.warn("S3 메타데이터를 가져올 수 없습니다. 대체 방법 시도");
+            }
+            
+            // 메타데이터에서 재생 시간을 가져오지 못한 경우, FFmpeg로 분석 시도
+            if (duration <= 0) {
+                log.info("FFmpeg로 영상 분석 시도");
+                analyzeVideoWithFFmpeg(videoUrl, videoKey);
+            }
+        } catch (Exception e) {
+            log.error("S3 메타데이터 조회 중 오류 발생: {}", e.getMessage());
+        }
+
+        // 4. 비디오 엔티티 저장
         Video video = Video.builder()
-                .filePath(request.getVideoUrl())
-                .thumbnailPath(thumbnailUrl) // 수정된 썸네일 URL 사용
+                .filePath(videoUrl)
+                .thumbnailPath(thumbnailUrl)
                 .duration((long)duration)
                 .fileSize(fileSize)
                 .videoStatus(playable)
@@ -268,17 +354,101 @@ public class VideoService {
         log.info("✅ 비디오 저장 완료: video_id={}", saved.getVideoId());
         return saved;
     }
-
+    
+    /**
+     * FFmpeg를 사용하여 비디오 분석
+     * 
+     * @param videoUrl 비디오 URL
+     * @param objectKey S3 객체 키
+     * @return [재생 시간, 재생 가능 여부] 배열
+     */
+    private double[] analyzeVideoWithFFmpeg(String videoUrl, String objectKey) {
+        double duration = 0;
+        boolean playable = false;
+        
+        try {
+            // Presigned URL 생성
+            URL presignedUrl = s3Service.generatePresignedUrlForDownload(objectKey);
+            
+            try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(presignedUrl.toString())) {
+                grabber.start();
+                duration = grabber.getLengthInTime() / 1_000_000.0; // 초 단위
+                playable = grabber.getLengthInFrames() > 0;
+                grabber.stop();
+                
+                log.info("FFmpeg로 비디오 분석 성공: duration={}초, playable={}", duration, playable);
+            } catch (Exception e) {
+                log.error("FFmpeg 비디오 분석 실패: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            log.error("Presigned URL 생성 중 오류: {}", e.getMessage());
+        }
+        
+        return new double[]{duration, playable ? 1.0 : 0.0};
+    }
+    
+    /**
+     * S3 URL인 경우 Presigned URL로 변환, 아닌 경우 원래 URL 반환
+     */
+    private String generatePresignedUrlIfNeeded(String url) {
+        if (url == null || url.isEmpty()) {
+            return url;
+        }
+        
+        try {
+            if (s3Service.isS3Url(url)) {
+                String objectKey = s3Service.extractS3Key(url);
+                if (objectKey != null) {
+                    URL presignedUrl = s3Service.generatePresignedUrlForDownload(objectKey);
+                    return presignedUrl.toString();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Presigned URL 생성 실패, 원본 URL 사용: {}", e.getMessage());
+        }
+        
+        return url;
+    }
+    
+    /**
+     * 원격 파일 크기 조회 (S3 URL 처리 포함)
+     */
     private long getRemoteFileSize(String url) {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-            conn.setRequestMethod("HEAD");
-            conn.getInputStream();
-            return conn.getContentLengthLong(); // ✅ 파일 크기 (byte)
+            // S3 URL인 경우 S3 API로 파일 크기 가져오기
+            if (s3Service.isS3Url(url)) {
+                String objectKey = s3Service.extractS3Key(url);
+                
+                // S3 메타데이터에서 파일 크기 조회
+                long size = s3Service.getObjectSize(objectKey);
+                if (size > 0) {
+                    log.info("S3 메타데이터에서 파일 크기 조회: {} 바이트", size);
+                    return size;
+                }
+                
+                // S3 메타데이터로 조회 실패한 경우 Presigned URL로 시도
+                log.info("Presigned URL로 파일 크기 조회 시도");
+                URL presignedUrl = s3Service.generatePresignedUrlForDownload(objectKey);
+                
+                try {
+                    HttpURLConnection conn = (HttpURLConnection) presignedUrl.openConnection();
+                    conn.setRequestMethod("HEAD");
+                    conn.getInputStream();
+                    return conn.getContentLengthLong();
+                } catch (Exception e) {
+                    log.error("Presigned URL로 파일 크기 조회 실패: {}", e.getMessage());
+                }
+                return 0;
+            } else {
+                // 일반 HTTP URL
+                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+                conn.setRequestMethod("HEAD");
+                conn.getInputStream();
+                return conn.getContentLengthLong();
+            }
         } catch (Exception e) {
-            System.err.println("파일 크기 확인 실패: " + e.getMessage());
+            log.error("파일 크기 확인 실패: {}", e.getMessage());
             return 0;
         }
     }
-
 }

@@ -9,6 +9,7 @@ import com.capstone.meerkatai.anomalybehavior.service.AnomalyBehaviorService;
 import com.capstone.meerkatai.common.dto.ApiResponse;
 import com.capstone.meerkatai.common.exception.ResourceNotFoundException;
 import com.capstone.meerkatai.dashboard.service.DashboardService;
+import com.capstone.meerkatai.global.service.S3Service;
 import com.capstone.meerkatai.storagespace.service.StorageSpaceService;
 import com.capstone.meerkatai.user.repository.UserRepository;
 import com.capstone.meerkatai.user.service.UserService;
@@ -34,6 +35,7 @@ public class AnomalyWebhookController {
     private final StorageSpaceService storageSpaceService;
     private final UserService userService;
     private final UserRepository userRepository;
+    private final S3Service s3Service;
 
     /**
      * ✅ 현재 로그인된 사용자 ID 추출
@@ -68,6 +70,15 @@ public class AnomalyWebhookController {
                 log.error("사용자 ID를 찾을 수 없음: {}", request.getUserId());
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("User not found with id: " + request.getUserId()));
+            }
+
+            // S3에서 제공하는 URL 형식 확인 및 검증
+            if (request.getVideoUrl() != null && !s3Service.isS3Url(request.getVideoUrl())) {
+                log.warn("S3 비디오 URL 형식이 올바르지 않습니다: {}", request.getVideoUrl());
+            }
+            
+            if (request.getThumbnailUrl() != null && !s3Service.isS3Url(request.getThumbnailUrl())) {
+                log.warn("S3 썸네일 URL 형식이 올바르지 않습니다: {}", request.getThumbnailUrl());
             }
 
             //FastAPI에서 받은 메타데이터 이용해서 DB 저장 및 갱신

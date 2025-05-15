@@ -1,6 +1,9 @@
 package com.capstone.meerkatai.global.service;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,9 +14,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -82,7 +88,7 @@ public class S3ServiceMockTest {
         URL mockUrl = new URL("https://" + bucketName + ".s3.amazonaws.com/" + objectKey);
         
         // amazonS3Client.generatePresignedUrl() 메서드 모킹
-        when(amazonS3Client.generatePresignedUrl(any())).thenReturn(mockUrl);
+        when(amazonS3Client.generatePresignedUrl(any(GeneratePresignedUrlRequest.class))).thenReturn(mockUrl);
         
         // Presigned URL 생성
         URL presignedUrl = s3Service.generatePresignedUrlForUpload(objectKey);
@@ -90,7 +96,28 @@ public class S3ServiceMockTest {
         // 검증
         assertNotNull(presignedUrl);
         assertEquals(mockUrl, presignedUrl);
-        verify(amazonS3Client, times(1)).generatePresignedUrl(any());
+        verify(amazonS3Client, times(1)).generatePresignedUrl(any(GeneratePresignedUrlRequest.class));
+    }
+
+    @Test
+    @DisplayName("다운로드용 Presigned URL 생성 테스트 (모킹)")
+    public void testGeneratePresignedUrlForDownload() throws Exception {
+        // 테스트 객체 키
+        String objectKey = "clips/10_20250514_043020.mp4";
+        
+        // 모킹된 URL 생성
+        URL mockUrl = new URL("https://" + bucketName + ".s3.amazonaws.com/" + objectKey);
+        
+        // amazonS3Client.generatePresignedUrl() 메서드 모킹
+        when(amazonS3Client.generatePresignedUrl(any(GeneratePresignedUrlRequest.class))).thenReturn(mockUrl);
+        
+        // Presigned URL 생성
+        URL presignedUrl = s3Service.generatePresignedUrlForDownload(objectKey);
+        
+        // 검증
+        assertNotNull(presignedUrl);
+        assertEquals(mockUrl, presignedUrl);
+        verify(amazonS3Client, times(1)).generatePresignedUrl(any(GeneratePresignedUrlRequest.class));
     }
 
     @Test
@@ -108,15 +135,24 @@ public class S3ServiceMockTest {
             content.getBytes(StandardCharsets.UTF_8)
         );
         
-        // amazonS3Client.putObject() 메서드 모킹 (void 메서드)
-        doNothing().when(amazonS3Client).putObject(eq(bucketName), eq(objectKey), any(), any());
+        // 입력 스트림 모킹
+        InputStream mockInputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
         
-        // 파일 업로드
+        // MockMultipartFile.getInputStream() 결과를 모킹할 수 없으므로 실제 파일 사용
+        
+        // 파일 업로드 후 반환되는 URL 확인
         String uploadedFileUrl = s3Service.uploadFile(mockFile, objectKey);
         
         // 검증
         assertEquals("https://" + bucketName + ".s3.amazonaws.com/" + objectKey, uploadedFileUrl);
-        verify(amazonS3Client, times(1)).putObject(eq(bucketName), eq(objectKey), any(), any());
+        
+        // amazonS3Client.putObject() 호출 검증
+        verify(amazonS3Client, times(1)).putObject(
+            eq(bucketName), 
+            eq(objectKey), 
+            any(InputStream.class), 
+            any(ObjectMetadata.class)
+        );
     }
 
     @Test
