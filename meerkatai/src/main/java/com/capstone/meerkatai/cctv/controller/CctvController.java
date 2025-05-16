@@ -75,6 +75,8 @@ public class CctvController {
                             .cctvId(cctv.getCctvId())
                             .cctvName(cctv.getCctvName())
                             .ipAddress(cctv.getIpAddress())
+                            .cctvAdmin(cctv.getCctvAdmin())
+                            .cctvPath(cctv.getCctvPath())
                             .createdAt(cctv.getCreatedAt())
                             .updatedAt(cctv.getUpdatedAt())
                             .is_active(isActive)

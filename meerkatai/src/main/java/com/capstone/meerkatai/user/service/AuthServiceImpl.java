@@ -205,25 +205,68 @@ public class AuthServiceImpl implements AuthService {
 
   /**
    * 사용자 정보를 수정합니다.
+   * @return UpdateUserResponse 객체와 함께 성공 메시지를 반환합니다.
    */
   @Override
   @Transactional
-  public UpdateUserResponse updateUser(UpdateUserRequest request) {
+  public UpdateUserResult updateUser(UpdateUserRequest request) {
     User user = userRepository.findById(request.getUserId())
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-    if (request.getUserName() != null) {
+    String message = null;
+    boolean nameChanged = false;
+    boolean passwordChanged = false;
+    
+    // 이름 변경 처리
+    if (request.getUserName() != null && !request.getUserName().equals(user.getName())) {
       user.setName(request.getUserName());
+      nameChanged = true;
     }
-    if (request.getUserPassword() != null) {
-      user.setPassword(passwordEncoder.encode(request.getUserPassword()));
+    
+    // 비밀번호 변경 처리
+    if (request.getNewPassword() != null) {
+      // 현재 비밀번호가 제공되지 않은 경우
+      if (request.getUserPassword() == null) {
+        throw new IllegalArgumentException("비밀번호를 변경하려면 현재 비밀번호를 입력해야 합니다.");
+      }
+      
+      // 현재 비밀번호 확인
+      if (!passwordEncoder.matches(request.getUserPassword(), user.getPassword())) {
+        throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
+      }
+      
+      // 새 비밀번호가 현재 비밀번호와 동일한지 확인
+      if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+        throw new IllegalArgumentException("새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+      }
+      
+      // 새 비밀번호 암호화 및 저장
+      String encodedPassword = passwordEncoder.encode(request.getNewPassword());
+      user.setPassword(encodedPassword);
+      passwordChanged = true;
+      
+      log.info("사용자 ID {} 비밀번호 변경 완료", user.getUserId());
+    }
+    
+    // 응답 메시지 생성
+    if (nameChanged && passwordChanged) {
+      message = "이름과 비밀번호가 성공적으로 변경되었습니다.";
+    } else if (nameChanged) {
+      message = "이름이 성공적으로 변경되었습니다.";
+    } else if (passwordChanged) {
+      message = "비밀번호가 성공적으로 변경되었습니다.";
+    } else {
+      message = "변경된 정보가 없습니다.";
     }
 
-    return UpdateUserResponse.builder()
+    // 응답 생성
+    UpdateUserResponse response = UpdateUserResponse.builder()
         .userId(user.getUserId())
         .userName(user.getName())
         .updatedAt(ZonedDateTime.now())
         .build();
+    
+    return new UpdateUserResult(response, message);
   }
 
   /**
