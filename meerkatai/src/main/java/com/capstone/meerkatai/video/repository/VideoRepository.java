@@ -11,4 +11,7 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
     List<Video> findByStreamingVideoStreamingVideoId(Long streamingVideoId);
     List<Video> findByUser_UserIdAndVideoIdIn(Long userId, List<Long> videoIds);
     Optional<Video> findByUserUserIdAndVideoId(Long userId, Long videoId);
+
+    List<Video> findByUserUserIdOrderByAnomalyBehavior_AnomalyTimeDesc(Long userId);
+
 }
