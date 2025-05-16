@@ -7,6 +7,7 @@ import com.capstone.meerkatai.common.dto.ApiResponse;
 import com.capstone.meerkatai.common.exception.ResourceNotFoundException;
 import com.capstone.meerkatai.streamingvideo.entity.StreamingVideo;
 import com.capstone.meerkatai.streamingvideo.repository.StreamingVideoRepository;
+import com.capstone.meerkatai.streamingvideo.service.StreamingVideoService;
 import com.capstone.meerkatai.user.entity.User;
 import com.capstone.meerkatai.user.repository.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -37,6 +38,7 @@ public class CctvController {
     private final CctvService cctvService;
     private final UserRepository userRepository;
     private final StreamingVideoRepository streamingVideoRepository;
+    private final StreamingVideoService streamingVideoService;
 
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -60,6 +62,9 @@ public class CctvController {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+
+        // ✅ 1. FastAPI에서 사용자 스트리밍 상태 먼저 동기화
+        streamingVideoService.updateStreamingStatusFromFastAPI(user.getUserId());
 
         List<Cctv> cctvs = cctvService.findByUserId(user.getUserId());
 

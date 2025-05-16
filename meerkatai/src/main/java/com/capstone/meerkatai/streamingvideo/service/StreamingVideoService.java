@@ -189,4 +189,46 @@ public class StreamingVideoService {
     return streamingVideoRepository.save(streamingVideo);
   }
 
+
+  public void updateStreamingStatusFromFastAPI(Long userId) {
+    String statusUrl = "http://localhost:8000/api/v1/active_streams";
+
+    try {
+      // FastAPI에서 전체 실행 중인 스트림 목록 받아오기
+      Map<String, Object> response = restTemplate.getForObject(statusUrl, Map.class);
+      List<Map<String, Object>> activeStreams = (List<Map<String, Object>>) response.get("streams");
+
+      // 해당 사용자에 대한 실행 중 스트림 cctvId만 추출
+      List<Long> activeCctvIdsForUser = activeStreams.stream()
+              .filter(stream -> Long.valueOf(String.valueOf(stream.get("user_id"))).equals(userId))
+              .map(stream -> Long.valueOf(String.valueOf(stream.get("cctv_id"))))
+              .toList();
+
+      // 해당 사용자의 모든 스트리밍 비디오 조회
+      List<StreamingVideo> userStreams = streamingVideoRepository.findByUserUserId(userId);
+
+      // 각 스트림의 상태를 FastAPI 결과 기준으로 업데이트
+      for (StreamingVideo stream : userStreams) {
+        Long cctvId = stream.getCctv().getCctvId();
+        boolean isActive = activeCctvIdsForUser.contains(cctvId);
+
+        if (!Boolean.valueOf(isActive).equals(stream.getStreamingVideoStatus())) {
+          stream.setStreamingVideoStatus(isActive);
+          if (!isActive) {
+            stream.setEndTime(LocalDateTime.now());
+          } else {
+            stream.setEndTime(null);
+          }
+          streamingVideoRepository.save(stream);
+        }
+      }
+
+      System.out.println("✅ 사용자(userId=" + userId + ")의 스트리밍 상태가 FastAPI(active_streams) 기준으로 동기화되었습니다.");
+
+    } catch (Exception e) {
+      System.err.println("❌ FastAPI 스트리밍 상태 동기화 실패: " + e.getMessage());
+    }
+  }
+
+
 }
