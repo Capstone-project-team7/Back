@@ -56,7 +56,8 @@ public class VideoService {
         int offset = (page - 1) * limit;
 
         // 전체 영상 리스트 가져오기 (페이징 없는 상태)
-        List<Video> allVideos = videoRepository.findByUserUserId(userId);
+        List<Video> allVideos = videoRepository.findByUserUserIdOrderByAnomalyBehavior_AnomalyTimeDesc(userId);
+        //List<Video> allVideos = videoRepository.findByUserUserId(userId);
         int total = allVideos.size();
         int pages = (int) Math.ceil((double) total / limit);
 
@@ -98,7 +99,9 @@ public class VideoService {
 
     //    필터 값 있는 경우(날짜 선택 OR 유형 선택 OR 날짜, 유형 선택 OR )
     public GetVideoListResponse getVideosByFilters(Long userId, VideoListRequest req) {
-        List<Video> allVideos = videoRepository.findByUserUserId(userId);
+        // 전체 영상 리스트 가져오기 (페이징 없는 상태)
+        List<Video> allVideos = videoRepository.findByUserUserIdOrderByAnomalyBehavior_AnomalyTimeDesc(userId);
+        //List<Video> allVideos = videoRepository.findByUserUserId(userId);
         Stream<Video> stream = allVideos.stream();
 
         // 날짜 필터 적용
