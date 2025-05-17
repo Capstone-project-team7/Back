@@ -170,4 +170,4 @@ public class S3ServiceMockTest {
         // 검증
         verify(amazonS3Client, times(1)).deleteObject(bucketName, objectKey);
     }
-} 
+}
