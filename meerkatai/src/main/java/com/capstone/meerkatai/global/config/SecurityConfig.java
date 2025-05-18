@@ -86,7 +86,7 @@ public class SecurityConfig {
  public CorsConfigurationSource corsConfigurationSource() {
    CorsConfiguration configuration = new CorsConfiguration();
    configuration.setAllowedOrigins(List.of(
-    "http://localhost:5173",  // 기존 프론트엔드 서버 주소
+    "http://localhost:5174",  // 기존 프론트엔드 서버 주소
     "http://localhost:8000"   // FastAPI 서버 주소 추가
 ));
    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));  // 허용할 HTTP 메서드
