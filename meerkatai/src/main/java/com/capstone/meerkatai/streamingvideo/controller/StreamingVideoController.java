@@ -66,9 +66,11 @@ public class StreamingVideoController {
 
 
     // 3. 연결 테스트 + 저장 + FastAPI 전송
+    //연결 요청
+    streamingVideoService.sendToFastAPI(userId, cctvId, rtspUrl);
+    //연결 성공 여부 확인 및 갱신
+    boolean connected = streamingVideoService.checkStreamingStatusFromFastAPIAndHandle(userId, cctvId, rtspUrl);
     //boolean connected = streamingVideoService.connectAndRegister(userId, cctvId, rtspUrl);
-
-    boolean connected = streamingVideoService.connectAndRegister(userId, cctvId, rtspUrl);
 
     Map<String, String> response = new HashMap<>();
     if (connected) {
