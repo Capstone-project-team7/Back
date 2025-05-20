@@ -132,7 +132,7 @@ public class StreamingVideoService {
   }
 
   public boolean disconnectAndNotify(Long userId, Long cctvId) {
-    String fastApiUrl = "http://localhost:8000/api/v1/streaming/stop";
+    String fastApiUrl = "https://sharp-burro-pleasantly.ngrok-free.app/api/v1/streaming/stop";
 
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
@@ -192,7 +192,7 @@ public class StreamingVideoService {
 
 
   public void updateStreamingStatusFromFastAPI(Long userId) {
-    String statusUrl = "http://localhost:8000/api/v1/active_streams";
+    String statusUrl = "https://sharp-burro-pleasantly.ngrok-free.app/api/v1/active_streams";
 
     try {
       // FastAPI에서 전체 실행 중인 스트림 목록 받아오기
