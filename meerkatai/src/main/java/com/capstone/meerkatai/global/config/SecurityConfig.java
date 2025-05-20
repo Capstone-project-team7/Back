@@ -90,7 +90,6 @@ public class SecurityConfig {
     "http://localhost:5173",  // 기존 프론트엔드 서버 주소
     "http://localhost:8000",   // FastAPI 서버 주소
        "https://sharp-burro-pleasantly.ngrok-free.app"    // ngrok GPU 서버 주소
-
 ));
    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));  // 허용할 HTTP 메서드
    configuration.setAllowedHeaders(List.of("*"));  // 모든 헤더 허용

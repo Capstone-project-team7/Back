@@ -31,86 +31,87 @@ public class StreamingVideoService {
   private final CctvRepository cctvRepository;
   private final RestTemplate restTemplate = new RestTemplate();
 
-  public boolean connectAndRegister(Long userId, Long targetCctvId, String rtspUrl) {
-    //일단 연결 성공 여부는 true로 둠.
-    //boolean connectionSuccessful = testRtspConnection(rtspUrl);
-    boolean connectionSuccessful = true;
+  //사용 안함
+//  public boolean connectAndRegister(Long userId, Long targetCctvId, String rtspUrl) {
+////    //일단 연결 성공 여부는 true로 둠.
+////    boolean connectionSuccessful = testRtspConnection(rtspUrl);
+////    //boolean connectionSuccessful = true;
+//
+//    try {
+//      // 1. 해당 사용자의 모든 활성 스트리밍 조회
+//      List<StreamingVideo> activeStreams = streamingVideoRepository.findByUserUserIdAndStreamingVideoStatusTrue(userId);
+//
+//      // 2. 다른 CCTV에 대한 스트리밍을 모두 비활성화 및 FastAPI에 중지 요청
+//      for (StreamingVideo stream : activeStreams) {
+//        Long cctvId = stream.getCctv().getCctvId();
+//        if (!cctvId.equals(targetCctvId)) {
+//          stream.setStreamingVideoStatus(false);
+//          stream.setEndTime(LocalDateTime.now());
+//          streamingVideoRepository.save(stream);
+//
+//          // FastAPI에 중지 요청
+//          String fastApiUrl = String.format("http://localhost:8000/api/v1/streaming/stop/%d", cctvId);
+//          try {
+//            restTemplate.put(fastApiUrl, null);
+//          } catch (Exception e) {
+//            System.err.println("⚠️ FastAPI 중지 요청 실패 (cctvId=" + cctvId + "): " + e.getMessage());
+//          }
+//        }
+//      }
+//
+//      // 3. 연결 시도할 CCTV 스트리밍Video 상태 확인 또는 생성 후 업데이트
+//      User user = userRepository.findById(userId)
+//              .orElseThrow(() -> new RuntimeException("User not found"));
+//      Cctv cctv = cctvRepository.findById(targetCctvId)
+//              .orElseThrow(() -> new RuntimeException("CCTV not found"));
+//
+//      Optional<StreamingVideo> existingStreamOpt = streamingVideoRepository.findByUserUserIdAndCctvCctvId(userId, targetCctvId);
+//
+//      StreamingVideo entity;
+//      if (existingStreamOpt.isPresent()) {
+//        // 이미 존재하는 경우 상태 갱신
+//        entity = existingStreamOpt.get();
+//        entity.setStreamingVideoStatus(connectionSuccessful);
+//        entity.setStreamingUrl(rtspUrl);
+//        entity.setStartTime(LocalDateTime.now());
+//      } else {
+//        // 없으면 새로 생성
+//        entity = StreamingVideo.builder()
+//                .user(user)
+//                .cctv(cctv)
+//                .streamingVideoStatus(connectionSuccessful)
+//                .streamingUrl(rtspUrl)
+//                .startTime(LocalDateTime.now())
+//                .build();
+//      }
+//
+//      streamingVideoRepository.save(entity);
+//
+//      // FastAPI로 전송
+//      sendToFastAPI(userId, targetCctvId, rtspUrl);
+//
+//      return connectionSuccessful;
+//    } catch (Exception e) {
+//      System.err.println("❌ 연결 처리 중 예외 발생: " + e.getMessage());
+//      return false;
+//    }
+//  }
 
-    try {
-      // 1. 해당 사용자의 모든 활성 스트리밍 조회
-      List<StreamingVideo> activeStreams = streamingVideoRepository.findByUserUserIdAndStreamingVideoStatusTrue(userId);
+//  private boolean testRtspConnection(String rtspUrl) {
+//    try {
+//      URL url = new URL(rtspUrl);
+//      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//      connection.setConnectTimeout(2000);
+//      connection.connect();
+//      int code = connection.getResponseCode();
+//      return (code >= 200 && code < 400);
+//    } catch (Exception e) {
+//      return false;
+//    }
+//  }
 
-      // 2. 다른 CCTV에 대한 스트리밍을 모두 비활성화 및 FastAPI에 중지 요청
-      for (StreamingVideo stream : activeStreams) {
-        Long cctvId = stream.getCctv().getCctvId();
-        if (!cctvId.equals(targetCctvId)) {
-          stream.setStreamingVideoStatus(false);
-          stream.setEndTime(LocalDateTime.now());
-          streamingVideoRepository.save(stream);
-
-          // FastAPI에 중지 요청
-          String fastApiUrl = String.format("https://sharp-burro-pleasantly.ngrok-free.app/api/v1/streaming/stop/%d", cctvId);
-          try {
-            restTemplate.put(fastApiUrl, null);
-          } catch (Exception e) {
-            System.err.println("⚠️ FastAPI 중지 요청 실패 (cctvId=" + cctvId + "): " + e.getMessage());
-          }
-        }
-      }
-
-      // 3. 연결 시도할 CCTV 스트리밍Video 상태 확인 또는 생성 후 업데이트
-      User user = userRepository.findById(userId)
-              .orElseThrow(() -> new RuntimeException("User not found"));
-      Cctv cctv = cctvRepository.findById(targetCctvId)
-              .orElseThrow(() -> new RuntimeException("CCTV not found"));
-
-      Optional<StreamingVideo> existingStreamOpt = streamingVideoRepository.findByUserUserIdAndCctvCctvId(userId, targetCctvId);
-
-      StreamingVideo entity;
-      if (existingStreamOpt.isPresent()) {
-        // 이미 존재하는 경우 상태 갱신
-        entity = existingStreamOpt.get();
-        entity.setStreamingVideoStatus(connectionSuccessful);
-        entity.setStreamingUrl(rtspUrl);
-        entity.setStartTime(LocalDateTime.now());
-      } else {
-        // 없으면 새로 생성
-        entity = StreamingVideo.builder()
-                .user(user)
-                .cctv(cctv)
-                .streamingVideoStatus(connectionSuccessful)
-                .streamingUrl(rtspUrl)
-                .startTime(LocalDateTime.now())
-                .build();
-      }
-
-      streamingVideoRepository.save(entity);
-
-      // FastAPI로 전송
-      sendToFastAPI(userId, targetCctvId, rtspUrl);
-
-      return connectionSuccessful;
-    } catch (Exception e) {
-      System.err.println("❌ 연결 처리 중 예외 발생: " + e.getMessage());
-      return false;
-    }
-  }
-
-  private boolean testRtspConnection(String rtspUrl) {
-    try {
-      URL url = new URL(rtspUrl);
-      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-      connection.setConnectTimeout(2000);
-      connection.connect();
-      int code = connection.getResponseCode();
-      return (code >= 200 && code < 400);
-    } catch (Exception e) {
-      return false;
-    }
-  }
-
-  private void sendToFastAPI(Long userId, Long cctvId, String rtspUrl) {
-    String fastApiUrl = "https://sharp-burro-pleasantly.ngrok-free.app/api/v1/streaming/start";  // ✅ 올바른 FastAPI URL
+  public void sendToFastAPI(Long userId, Long cctvId, String rtspUrl) {
+    String fastApiUrl = "http://localhost:8000/api/v1/streaming/start";  // ✅ 올바른 FastAPI URL
 
     // ✅ FastAPI가 기대하는 형식: snake_case
     Map<String, Object> payload = new HashMap<>();
@@ -198,19 +199,18 @@ public class StreamingVideoService {
       Map<String, Object> response = restTemplate.getForObject(statusUrl, Map.class);
       List<Map<String, Object>> activeStreams = (List<Map<String, Object>>) response.get("streams");
 
-      // 해당 사용자에 대한 실행 중 스트림 cctvId만 추출
-      List<Long> activeCctvIdsForUser = activeStreams.stream()
-              .filter(stream -> Long.valueOf(String.valueOf(stream.get("user_id"))).equals(userId))
-              .map(stream -> Long.valueOf(String.valueOf(stream.get("cctv_id"))))
-              .toList();
-
       // 해당 사용자의 모든 스트리밍 비디오 조회
       List<StreamingVideo> userStreams = streamingVideoRepository.findByUserUserId(userId);
 
-      // 각 스트림의 상태를 FastAPI 결과 기준으로 업데이트
       for (StreamingVideo stream : userStreams) {
         Long cctvId = stream.getCctv().getCctvId();
-        boolean isActive = activeCctvIdsForUser.contains(cctvId);
+
+        // FastAPI에서 해당 user + cctv의 스트림이 존재하고, is_running == true 인지 확인
+        boolean isActive = activeStreams.stream().anyMatch(s ->
+                Long.valueOf(String.valueOf(s.get("user_id"))).equals(userId) &&
+                        Long.valueOf(String.valueOf(s.get("cctv_id"))).equals(cctvId) &&
+                        Boolean.TRUE.equals(s.get("is_running"))
+        );
 
         if (!Boolean.valueOf(isActive).equals(stream.getStreamingVideoStatus())) {
           stream.setStreamingVideoStatus(isActive);
@@ -223,12 +223,82 @@ public class StreamingVideoService {
         }
       }
 
-      System.out.println("✅ 사용자(userId=" + userId + ")의 스트리밍 상태가 FastAPI(active_streams) 기준으로 동기화되었습니다.");
+      System.out.println("✅ 사용자(userId=" + userId + ")의 스트리밍 상태가 is_running 기준으로 동기화되었습니다.");
 
     } catch (Exception e) {
       System.err.println("❌ FastAPI 스트리밍 상태 동기화 실패: " + e.getMessage());
     }
   }
 
+    public boolean checkStreamingStatusFromFastAPIAndHandle(Long userId, Long targetCctvId, String rtspUrl) {
+    String statusUrl = "http://localhost:8000/api/v1/active_streams";
 
+    try {
+      // FastAPI에서 전체 실행 중인 스트림 목록 받아오기
+      Map<String, Object> response = restTemplate.getForObject(statusUrl, Map.class);
+      List<Map<String, Object>> activeStreams = (List<Map<String, Object>>) response.get("streams");
+
+      // ✅ userId, cctvId가 일치하고 is_running == true 인 스트림이 있는지 확인
+      boolean isStreaming = activeStreams.stream().anyMatch(stream ->
+              Long.valueOf(String.valueOf(stream.get("user_id"))).equals(userId) &&
+                      Long.valueOf(String.valueOf(stream.get("cctv_id"))).equals(targetCctvId) &&
+                      Boolean.TRUE.equals(stream.get("is_running"))
+      );
+
+      if (isStreaming) {
+        // 1. 해당 사용자의 모든 활성 스트리밍 조회
+        List<StreamingVideo> activeStreamList = streamingVideoRepository.findByUserUserIdAndStreamingVideoStatusTrue(userId);
+
+        // 2. 다른 CCTV에 대한 스트리밍을 모두 비활성화 및 FastAPI에 중지 요청
+        for (StreamingVideo stream : activeStreamList) {
+          Long cctvId = stream.getCctv().getCctvId();
+          if (!cctvId.equals(targetCctvId)) {
+            stream.setStreamingVideoStatus(false);
+            stream.setEndTime(LocalDateTime.now());
+            streamingVideoRepository.save(stream);
+
+            // FastAPI에 중지 요청
+            String fastApiUrl = String.format("http://localhost:8000/api/v1/streaming/stop/%d", cctvId);
+            try {
+              restTemplate.put(fastApiUrl, null);
+            } catch (Exception e) {
+              System.err.println("⚠️ FastAPI 중지 요청 실패 (cctvId=" + cctvId + "): " + e.getMessage());
+            }
+          }
+        }
+
+        // 3. 연결 시도할 CCTV 스트리밍Video 상태 확인 또는 생성 후 업데이트
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Cctv cctv = cctvRepository.findById(targetCctvId)
+                .orElseThrow(() -> new RuntimeException("CCTV not found"));
+
+        Optional<StreamingVideo> existingStreamOpt = streamingVideoRepository.findByUserUserIdAndCctvCctvId(userId, targetCctvId);
+
+        StreamingVideo entity;
+        if (existingStreamOpt.isPresent()) {
+          entity = existingStreamOpt.get();
+          entity.setStreamingVideoStatus(true);
+          entity.setStreamingUrl(rtspUrl);
+          entity.setStartTime(LocalDateTime.now());
+        } else {
+          entity = StreamingVideo.builder()
+                  .user(user)
+                  .cctv(cctv)
+                  .streamingVideoStatus(true)
+                  .streamingUrl(rtspUrl)
+                  .startTime(LocalDateTime.now())
+                  .build();
+        }
+
+        streamingVideoRepository.save(entity);
+      }
+
+      return isStreaming;
+
+    } catch (Exception e) {
+      System.err.println("❌ FastAPI 스트리밍 상태 확인 실패: " + e.getMessage());
+      return false;
+    }
+  }
 }
