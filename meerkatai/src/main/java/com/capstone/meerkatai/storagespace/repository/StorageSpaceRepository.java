@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface StorageSpaceRepository extends JpaRepository<StorageSpace, Long> {
     Optional<StorageSpace> findByUserUserId(Long userId);
+
+    void deleteByUserUserId(Long userId);
 }

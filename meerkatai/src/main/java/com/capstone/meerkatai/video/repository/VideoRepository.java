@@ -14,4 +14,5 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
 
     List<Video> findByUserUserIdOrderByAnomalyBehavior_AnomalyTimeDesc(Long userId);
 
+    void deleteByUserUserId(Long userId);
 }

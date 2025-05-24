@@ -35,7 +35,11 @@ public class AnomalyBehavior {
     @JoinColumn(name = "streaming_video_id", nullable = false)
     private StreamingVideo streamingVideo;
 
+//    @ManyToOne
+//    @JoinColumn(name = "user_id", nullable = false)
+//    private User user;
+
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 }

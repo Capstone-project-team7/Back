@@ -54,5 +54,5 @@ public interface AuthService {
    * @throws IllegalArgumentException 존재하지 않는 사용자인 경우
    * @throws org.springframework.security.authentication.BadCredentialsException 비밀번호가 일치하지 않는 경우
    */
-  void withdraw(WithdrawRequest request);
+  void withdraw(Long userId, WithdrawRequest request);
 }

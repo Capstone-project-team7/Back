@@ -1,11 +1,15 @@
 package com.capstone.meerkatai.streamingvideo.entity;
 
+import com.capstone.meerkatai.anomalybehavior.entity.AnomalyBehavior;
 import com.capstone.meerkatai.cctv.entity.Cctv;
 import com.capstone.meerkatai.user.entity.User;
+import com.capstone.meerkatai.video.entity.Video;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 스트리밍 비디오 정보를 저장하는 엔티티 클래스입니다.
@@ -59,4 +63,12 @@ public class StreamingVideo {
     private String streamingUrl;
 
     private Boolean streamingVideoStatus;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "streamingVideo", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Video> videos = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "streamingVideo", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AnomalyBehavior> anomalyBehaviors = new ArrayList<>();
 }
