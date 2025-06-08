@@ -4,12 +4,18 @@ import com.capstone.meerkatai.user.dto.*;
 import com.capstone.meerkatai.user.service.AuthService;
 import com.capstone.meerkatai.user.entity.User;
 import com.capstone.meerkatai.user.repository.UserRepository;
+import com.capstone.meerkatai.video.dto.VideoDeleteRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 
 //사용자 인증 및 계정 관리를 위한 REST API 컨트롤러입니다.
@@ -65,6 +71,7 @@ public class AuthController {
    * <pre>
    * {
    *   "user_email": "user@example.com",
+   *   "user_password": "currentpassword123",
    *   "new_password": "newpassword123"
    * }
    * </pre>
@@ -120,15 +127,28 @@ public class AuthController {
    * {
    *   "user_id": 123,
    *   "user_name": "김철수",
-   *   "user_password": "newpassword123",
-   *   "notify_status": false
+   *   "user_password": "currentpassword",
+   *   "new_password": "newpassword123"
+   * }
+   * </pre>
+   * 
+   * 응답 예시:
+   * <pre>
+   * {
+   *   "status": "success",
+   *   "data": {
+   *     "user_id": 123,
+   *     "user_name": "김철수",
+   *     "updated_at": "2023-06-01T12:34:56.789Z"
+   *   },
+   *   "message": "비밀번호가 성공적으로 변경되었습니다."
    * }
    * </pre>
    */
   @PutMapping("/update")
   public ResponseEntity<ApiResponse<UpdateUserResponse>> updateUser(@Valid @RequestBody UpdateUserRequest request) {
-    UpdateUserResponse response = authService.updateUser(request);
-    return ResponseEntity.ok(new ApiResponse<>("success", response));
+    UpdateUserResult result = authService.updateUser(request);
+    return ResponseEntity.ok(new ApiResponse<>("success", result.getResponse(), result.getMessage()));
   }
 
   /**
@@ -142,16 +162,51 @@ public class AuthController {
    * }
    * </pre>
    */
+
+  // ✅ 공통 메서드: 현재 사용자 ID 조회
+  private Long getCurrentUserId() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
+
+    return userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."))
+            .getUserId(); // User 엔티티에서 실제 ID 필드명에 맞게 수정
+  }
+
+//  @DeleteMapping("/withdraw")
+//  public ResponseEntity<ApiResponse<String>> withdraw(@Valid @RequestBody WithdrawRequest request) {
+//    authService.withdraw(request);
+//    return ResponseEntity.ok(new ApiResponse<>("success", "회원 탈퇴가 완료되었습니다."));
+//  }
+
   @DeleteMapping("/withdraw")
-  public ResponseEntity<ApiResponse<String>> withdraw(@Valid @RequestBody WithdrawRequest request) {
-    authService.withdraw(request);
-    return ResponseEntity.ok(new ApiResponse<>("success", "회원 탈퇴가 완료되었습니다."));
+  public ResponseEntity<?> deleteUser(
+          @Valid @RequestBody WithdrawRequest request
+  ) {
+    try {
+      Long userId = getCurrentUserId();
+      authService.withdraw(userId, request);
+
+      return ResponseEntity.ok(Map.of(
+              "status", "success",
+              "message", "회원 탈퇴가 완료되었습니다."
+      ));
+    } catch (BadCredentialsException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+              "status", "error",
+              "message", "비밀번호가 일치하지 않습니다."
+      ));
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+              "status", "error",
+              "message", e.getMessage()
+      ));
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+              "status", "error",
+              "message", "서버 내부 오류가 발생했습니다."
+      ));
+    }
   }
 
-  //컨트롤러에서 발생하는 예외를 처리
-
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<ApiResponse<String>> handleException(Exception e) {
-    return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage()));
-  }
 }

@@ -28,4 +28,6 @@ public interface CctvRepository extends JpaRepository<Cctv, Long> {
     //List<Cctv> findByUser_Id(Long Id);
     List<Cctv> findByUser_UserId(Long userId);
     Optional<Cctv> findByCctvIdAndUserUserId(Long cctvId, Long userId);
+
+    void deleteByUserUserId(Long userId);
 }

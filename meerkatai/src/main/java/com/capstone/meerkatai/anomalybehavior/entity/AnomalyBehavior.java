@@ -12,9 +12,11 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "anomaly_behavior")
 public class AnomalyBehavior {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "anomaly_id", nullable = false, updatable = false)
     private Long anomalyId;
 
     @Column(nullable = false)
@@ -33,7 +35,11 @@ public class AnomalyBehavior {
     @JoinColumn(name = "streaming_video_id", nullable = false)
     private StreamingVideo streamingVideo;
 
+//    @ManyToOne
+//    @JoinColumn(name = "user_id", nullable = false)
+//    private User user;
+
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 }

@@ -22,7 +22,7 @@ public class DashboardService {
     public void updateDashboardWithAnomaly(AnomalyVideoMetadataRequest request) {
         Long userId = request.getUserId();
         LocalDate date = request.getTimestamp().toLocalDate();
-        String anomalyType = request.getAnomalyType();
+        String anomalyType = request.getAnomalyType(); // 예: "절도 감지", "폭행 의심", "파손 흔적"
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자 없음"));
@@ -32,7 +32,7 @@ public class DashboardService {
         Dashboard dashboard = optional.orElseGet(() -> {
             Dashboard newEntry = new Dashboard();
             newEntry.setUser(user);
-            newEntry.setTime(date);  // LocalDate 그대로 저장
+            newEntry.setTime(date);
             newEntry.setType1Count(0);
             newEntry.setType2Count(0);
             newEntry.setType3Count(0);
@@ -43,15 +43,16 @@ public class DashboardService {
             return newEntry;
         });
 
-        switch (anomalyType.toUpperCase()) {
-            case "FALL" -> dashboard.setType1Count(dashboard.getType1Count() + 1);
-            case "DAMAGE" -> dashboard.setType2Count(dashboard.getType2Count() + 1);
-            case "FIRE" -> dashboard.setType3Count(dashboard.getType3Count() + 1);
-            case "SMOKE" -> dashboard.setType4Count(dashboard.getType4Count() + 1);
-            case "ABANDON" -> dashboard.setType5Count(dashboard.getType5Count() + 1);
-            case "THEFT" -> dashboard.setType6Count(dashboard.getType6Count() + 1);
-            case "ASSAULT" -> dashboard.setType7Count(dashboard.getType7Count() + 1);
-        }
+        // ✅ 포함 키워드 → 카운트 증가 로직
+        String lowerType = anomalyType.toLowerCase(); // 소문자 처리
+
+        if (lowerType.contains("전도")) dashboard.setType1Count(dashboard.getType1Count() + 1);
+        if (lowerType.contains("파손")) dashboard.setType2Count(dashboard.getType2Count() + 1);
+        if (lowerType.contains("방화")) dashboard.setType3Count(dashboard.getType3Count() + 1);
+        if (lowerType.contains("흡연")) dashboard.setType4Count(dashboard.getType4Count() + 1);
+        if (lowerType.contains("유기")) dashboard.setType5Count(dashboard.getType5Count() + 1);
+        if (lowerType.contains("절도")) dashboard.setType6Count(dashboard.getType6Count() + 1);
+        if (lowerType.contains("폭행")) dashboard.setType7Count(dashboard.getType7Count() + 1);
 
         dashboardRepository.save(dashboard);
     }

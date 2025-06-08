@@ -1,12 +1,17 @@
 package com.capstone.meerkatai.user.service;
 
+import com.capstone.meerkatai.anomalybehavior.repository.AnomalyBehaviorRepository;
+import com.capstone.meerkatai.cctv.repository.CctvRepository;
+import com.capstone.meerkatai.dashboard.repository.DashboardRepository;
 import com.capstone.meerkatai.global.jwt.JwtUtil;
 import com.capstone.meerkatai.storagespace.entity.StorageSpace;
 import com.capstone.meerkatai.storagespace.repository.StorageSpaceRepository;
+import com.capstone.meerkatai.streamingvideo.repository.StreamingVideoRepository;
 import com.capstone.meerkatai.user.dto.*;
 import com.capstone.meerkatai.user.entity.User;
 import com.capstone.meerkatai.user.entity.Role;
 import com.capstone.meerkatai.user.repository.UserRepository;
+import com.capstone.meerkatai.video.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,7 +38,13 @@ public class AuthServiceImpl implements AuthService {
   private final PasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
   private final JwtUtil jwtUtil;
+
   private final StorageSpaceRepository storageSpaceRepository;
+  private final AnomalyBehaviorRepository anomalyBehaviorRepository;
+  private final VideoRepository videoRepository;
+  private final StreamingVideoRepository streamingVideoRepository;
+  private final CctvRepository cctvRepository;
+  private final DashboardRepository dashboardRepository;
 
   /**
    * 기본 저장 공간 크기 (10GB)
@@ -135,6 +146,7 @@ public class AuthServiceImpl implements AuthService {
           .expiresIn(86400)
           .userId(user.getUserId())
           .userName(user.getName())
+          .notifyStatus(user.isNotification())
           .firstLogin(isFirstLogin)
           .totalSpace(totalSpace)
           .usedSpace(usedSpace)
@@ -156,9 +168,21 @@ public class AuthServiceImpl implements AuthService {
     User user = userRepository.findByEmail(request.getUserEmail())
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
 
+    // 기존 비밀번호 확인
+    if (!passwordEncoder.matches(request.getUserPassword(), user.getPassword())) {
+      throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
+    }
+    
+    // 새 비밀번호가 현재 비밀번호와 동일한지 확인
+    if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+      throw new IllegalArgumentException("새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+    }
+
     // 새 비밀번호 암호화 및 저장
     String encodedPassword = passwordEncoder.encode(request.getNewPassword());
     user.setPassword(encodedPassword);
+    
+    log.info("사용자 {} 비밀번호 변경 완료", user.getEmail());
   }
 
   /**
@@ -192,29 +216,68 @@ public class AuthServiceImpl implements AuthService {
 
   /**
    * 사용자 정보를 수정합니다.
+   * @return UpdateUserResponse 객체와 함께 성공 메시지를 반환합니다.
    */
   @Override
   @Transactional
-  public UpdateUserResponse updateUser(UpdateUserRequest request) {
+  public UpdateUserResult updateUser(UpdateUserRequest request) {
     User user = userRepository.findById(request.getUserId())
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-    if (request.getUserName() != null) {
+    String message = null;
+    boolean nameChanged = false;
+    boolean passwordChanged = false;
+    
+    // 이름 변경 처리
+    if (request.getUserName() != null && !request.getUserName().equals(user.getName())) {
       user.setName(request.getUserName());
+      nameChanged = true;
     }
-    if (request.getUserPassword() != null) {
-      user.setPassword(passwordEncoder.encode(request.getUserPassword()));
+    
+    // 비밀번호 변경 처리
+    if (request.getNewPassword() != null) {
+      // 현재 비밀번호가 제공되지 않은 경우
+      if (request.getUserPassword() == null) {
+        throw new IllegalArgumentException("비밀번호를 변경하려면 현재 비밀번호를 입력해야 합니다.");
+      }
+      
+      // 현재 비밀번호 확인
+      if (!passwordEncoder.matches(request.getUserPassword(), user.getPassword())) {
+        throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
+      }
+      
+      // 새 비밀번호가 현재 비밀번호와 동일한지 확인
+      if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+        throw new IllegalArgumentException("새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+      }
+      
+      // 새 비밀번호 암호화 및 저장
+      String encodedPassword = passwordEncoder.encode(request.getNewPassword());
+      user.setPassword(encodedPassword);
+      passwordChanged = true;
+      
+      log.info("사용자 ID {} 비밀번호 변경 완료", user.getUserId());
     }
-    if (request.getNotifyStatus() != null) {
-      user.setNotification(request.getNotifyStatus());
+    
+    // 응답 메시지 생성
+    if (nameChanged && passwordChanged) {
+      message = "이름과 비밀번호가 성공적으로 변경되었습니다.";
+    } else if (nameChanged) {
+      message = "이름이 성공적으로 변경되었습니다.";
+    } else if (passwordChanged) {
+      message = "비밀번호가 성공적으로 변경되었습니다.";
+    } else {
+      message = "변경된 정보가 없습니다.";
     }
 
-    return UpdateUserResponse.builder()
+    // 응답 생성
+    UpdateUserResponse response = UpdateUserResponse.builder()
         .userId(user.getUserId())
         .userName(user.getName())
-        .notifyStatus(user.isNotification())
         .updatedAt(ZonedDateTime.now())
         .build();
+    
+    return new UpdateUserResult(response, message);
   }
 
   /**
@@ -222,14 +285,43 @@ public class AuthServiceImpl implements AuthService {
    */
   @Override
   @Transactional
-  public void withdraw(WithdrawRequest request) {
-    User user = userRepository.findById(request.getUserId())
-        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+  public void withdraw(Long userId, WithdrawRequest request) {
+    log.info("🔍 [Withdraw] Starting withdrawal process - userId: {}", userId);
+
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> {
+              log.error("❌ [Withdraw] User not found - userId: {}", userId);
+              return new IllegalArgumentException("User does not exist.");
+            });
+    log.info("✅ [Withdraw] User found - email: {}", user.getEmail());
 
     if (!passwordEncoder.matches(request.getUserPassword(), user.getPassword())) {
-      throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
+      log.warn("❌ [Withdraw] Password mismatch - userId: {}", userId);
+      throw new BadCredentialsException("Incorrect password.");
     }
+    log.info("✅ [Withdraw] Password verification passed");
 
-    userRepository.delete(user);
+    try {
+      log.info("🧹 [Withdraw] Deleting child entities...");
+
+       dashboardRepository.deleteByUserUserId(userId);
+       anomalyBehaviorRepository.deleteByUserUserId(userId);
+       videoRepository.deleteByUserUserId(userId);
+       streamingVideoRepository.deleteByUserUserId(userId);
+       cctvRepository.deleteByUserUserId(userId);
+       storageSpaceRepository.deleteByUserUserId(userId);
+
+      log.info("🧼 [Withdraw] Child entity deletion complete");
+
+      log.info("🗑️ [Withdraw] Deleting user - userId: {}", userId);
+      userRepository.delete(user);
+      log.info("✅ [Withdraw] User deletion successful");
+
+    } catch (Exception e) {
+      log.error("❌ [Withdraw] Exception during withdrawal - userId: {}, message: {}", userId, e.getMessage(), e);
+      throw e;
+    }
   }
+
+
 }

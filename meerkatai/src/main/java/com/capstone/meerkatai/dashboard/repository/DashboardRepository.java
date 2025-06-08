@@ -13,4 +13,6 @@ public interface DashboardRepository extends JpaRepository<Dashboard, Long> {
 
     Optional<Dashboard> findByUserAndTime(User user, LocalDate time);
     List<Dashboard> findByUserAndTimeBetween(User user, LocalDate start, LocalDate end);
+
+    void deleteByUserUserId(Long userId);
 }

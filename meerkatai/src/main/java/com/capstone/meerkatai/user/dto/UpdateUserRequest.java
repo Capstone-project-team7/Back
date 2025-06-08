@@ -18,7 +18,7 @@ public class UpdateUserRequest {
    * 이 ID를 통해 업데이트할 사용자를 식별합니다.
    * </p>
    */
-  @NotNull
+  @NotNull(message = "사용자 ID는 필수 입력 항목입니다")
   @JsonProperty("user_id")
   private Long userId;
 
@@ -33,24 +33,22 @@ public class UpdateUserRequest {
   private String userName;
 
   /**
-   * 변경할 사용자의 비밀번호입니다.
+   * 현재 사용자의 비밀번호입니다.
    * <p>
-   * 선택적 입력 항목입니다.
-   * null인 경우 비밀번호가 변경되지 않습니다.
-   * 값이 제공된 경우 서비스에서 암호화되어 저장됩니다.
+   * 선택적 입력 항목이지만, 비밀번호를 변경하려면 필수입니다.
+   * 본인 확인을 위해 사용됩니다.
    * </p>
    */
   @JsonProperty("user_password")
   private String userPassword;
-
+  
   /**
-   * 변경할 사용자의 알림 설정 상태입니다.
+   * 새로 변경할 비밀번호입니다.
    * <p>
    * 선택적 입력 항목입니다.
-   * null인 경우 알림 설정이 변경되지 않습니다.
-   * true: 알림 활성화, false: 알림 비활성화
+   * 값이 제공된 경우 현재 비밀번호 확인 후 새 비밀번호로 변경됩니다.
    * </p>
    */
-  @JsonProperty("notify_status")
-  private Boolean notifyStatus;
+  @JsonProperty("new_password")
+  private String newPassword;
 }

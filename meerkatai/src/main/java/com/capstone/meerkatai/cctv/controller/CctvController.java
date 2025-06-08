@@ -1,15 +1,13 @@
 package com.capstone.meerkatai.cctv.controller;
 
-import com.capstone.meerkatai.cctv.dto.CctvAddRequest;
-import com.capstone.meerkatai.cctv.dto.CctvDetailResponse;
-import com.capstone.meerkatai.cctv.dto.CctvResponse;
-import com.capstone.meerkatai.cctv.dto.CctvUpdateRequest;
+import com.capstone.meerkatai.cctv.dto.*;
 import com.capstone.meerkatai.cctv.entity.Cctv;
 import com.capstone.meerkatai.cctv.service.CctvService;
 import com.capstone.meerkatai.common.dto.ApiResponse;
 import com.capstone.meerkatai.common.exception.ResourceNotFoundException;
 import com.capstone.meerkatai.streamingvideo.entity.StreamingVideo;
 import com.capstone.meerkatai.streamingvideo.repository.StreamingVideoRepository;
+import com.capstone.meerkatai.streamingvideo.service.StreamingVideoService;
 import com.capstone.meerkatai.user.entity.User;
 import com.capstone.meerkatai.user.repository.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -21,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+
 
 /**
  * CCTV 관련 API 요청을 처리하는 REST 컨트롤러입니다.
@@ -38,6 +38,7 @@ public class CctvController {
     private final CctvService cctvService;
     private final UserRepository userRepository;
     private final StreamingVideoRepository streamingVideoRepository;
+    private final StreamingVideoService streamingVideoService;
 
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -62,6 +63,9 @@ public class CctvController {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
+        // ✅ 1. FastAPI에서 사용자 스트리밍 상태 먼저 동기화
+        streamingVideoService.updateStreamingStatusFromFastAPI(user.getUserId());
+
         List<Cctv> cctvs = cctvService.findByUserId(user.getUserId());
 
         List<CctvResponse> responses = cctvs.stream()
@@ -76,6 +80,8 @@ public class CctvController {
                             .cctvId(cctv.getCctvId())
                             .cctvName(cctv.getCctvName())
                             .ipAddress(cctv.getIpAddress())
+                            .cctvAdmin(cctv.getCctvAdmin())
+                            .cctvPath(cctv.getCctvPath())
                             .createdAt(cctv.getCreatedAt())
                             .updatedAt(cctv.getUpdatedAt())
                             .is_active(isActive)
@@ -198,43 +204,50 @@ public class CctvController {
      * 특정 CCTV를 삭제합니다.
      * 요청한 CCTV가 현재 인증된 사용자의 것인지 확인합니다.
      *
-     * @param cctvId 삭제할 CCTV의 고유 식별자
+     /* @param cctvId 삭제할 CCTV의 고유 식별자
      * @return 삭제 결과가 포함된 ApiResponse 객체
      * @throws ResourceNotFoundException 해당 ID의 CCTV가 존재하지 않을 경우 발생
      * @throws Exception 삭제 과정에서 다른 오류가 발생할 경우
      */
-    @DeleteMapping("/delete/{cctvId}")
-    public ApiResponse<Map<String, Object>> deleteCctv(@PathVariable Long cctvId) {
-        try {
-            // 현재 인증된 사용자 정보 가져오기
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String email = authentication.getName();
+    @DeleteMapping("/delete")
+    public ApiResponse<List<Map<String, Object>>> deleteCctvs(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody CctvDeleteRequest request
+    ) {
+        // 현재 사용자 확인
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
 
-            // 이메일로 사용자 ID 조회
-            User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
-            // CCTV 정보 조회
-            Cctv cctv = cctvService.findById(cctvId)
-                .orElseThrow(() -> new ResourceNotFoundException("CCTV", "id", cctvId));
+        List<Map<String, Object>> resultList = new ArrayList<>();
 
-            // 요청한 CCTV가 현재 사용자의 것인지 확인
-            if (!cctv.getUser().getUserId().equals(user.getUserId())) {
-                throw new ResourceNotFoundException("CCTV", "id", cctvId);
+        for (Long cctvId : request.getCctvIds()) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("cctv_id", cctvId);
+
+            try {
+                Cctv cctv = cctvService.findById(cctvId)
+                        .orElseThrow(() -> new ResourceNotFoundException("CCTV", "id", cctvId));
+
+                if (!cctv.getUser().getUserId().equals(user.getUserId())) {
+                    throw new ResourceNotFoundException("CCTV", "id", cctvId);
+                }
+
+                cctvService.delete(cctvId);
+                result.put("deleted", true);
+            } catch (Exception e) {
+                result.put("deleted", false);
+                result.put("error", e.getMessage());
             }
 
-            cctvService.delete(cctvId);
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("cctv_id", cctvId);
-            data.put("deleted", true);
-
-            return ApiResponse.success(data);
-        } catch (Exception e) {
-            e.printStackTrace(); // 콘솔에 스택 트레이스 출력
-            throw e; // 예외를 다시 던져서 ExceptionHandler에서 처리하도록 함
+            resultList.add(result);
         }
+
+        return ApiResponse.success(resultList);
     }
+
 
     /**
      * Cctv 엔티티를 CctvResponse DTO로 변환합니다.

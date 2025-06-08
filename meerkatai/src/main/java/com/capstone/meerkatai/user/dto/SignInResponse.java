@@ -35,6 +35,13 @@ public class SignInResponse {
   private String userName;
 
   /**
+   * 사용자의 알림 설정 상태입니다.
+   * true: 알림 활성화, false: 알림 비활성화
+   */
+  @JsonProperty("notify_status")
+  private Boolean notifyStatus;
+
+  /**
    * 사용자의 최초 로그인 여부입니다.
    * true인 경우 사용자가 처음으로 로그인한 것을 의미합니다.
    */
@@ -53,11 +60,6 @@ public class SignInResponse {
   @JsonProperty("used_space")
   private Long usedSpace;
 
-  /**
-   * 사용자의 알림 발송 여부 입니다.
-   */
-  @JsonProperty("notify_status")
-  private Boolean notifyStatus;
 
   /**
    * 응답 예시:
@@ -67,6 +69,7 @@ public class SignInResponse {
    *   "expiresIn": 86400,
    *   "user_id": 123,
    *   "user_name": "홍길동",
+   *   "notify_status": true,
    *   "first_login": false,
    *   "total_space": 1073741824,
    *   "used_space": 52428800
