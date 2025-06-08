@@ -12,4 +12,6 @@ public interface StreamingVideoRepository extends JpaRepository<StreamingVideo, 
 
   Optional<StreamingVideo> findByUserUserIdAndCctvCctvId(Long userId, Long cctvId);
   List<StreamingVideo> findByUserUserIdAndStreamingVideoStatusTrue(Long cctvId);
+
+  void deleteByUserUserId(Long userId);
 }

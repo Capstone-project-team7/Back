@@ -5,6 +5,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import com.capstone.meerkatai.anomalybehavior.entity.AnomalyBehavior;
+import com.capstone.meerkatai.cctv.entity.Cctv;
+import com.capstone.meerkatai.dashboard.entity.Dashboard;
+import com.capstone.meerkatai.storagespace.entity.StorageSpace;
+import com.capstone.meerkatai.streamingvideo.entity.StreamingVideo;
+import com.capstone.meerkatai.video.entity.Video;
+import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -13,17 +20,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -126,6 +122,33 @@ public class User implements UserDetails {
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+
+    // 부모 엔티티에서 자식 자동 삭제 로직을 위함.
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StorageSpace> storageSpaces = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Cctv> cctvs = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StreamingVideo> streamingVideos = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Video> videos = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AnomalyBehavior> anomalyBehaviors = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Dashboard> dashboards = new ArrayList<>();
+
 
     /**
      * 비밀번호를 암호화하는 메서드입니다.
